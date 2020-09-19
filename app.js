@@ -12,6 +12,8 @@ var http = require('http');
 
 //create a server object:
 http.createServer(function (req, res) {
-  res.write('Welcome to draw and guess server'); //write a response to the client
+  res.write(`Welcome to draw and guess server ${process.env.PORT}`); //write a response to the client
   res.end(); //end the response
-}).listen(8080); //the server object listens on port 8080
+}).listen(process.env.PORT || 8080); //the server object listens on port 8080
+
+console.log(`ENV PORT ${process.env.PORT}`)
