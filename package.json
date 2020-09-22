@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/half-blood-prince/draw-server#readme",
   "dependencies": {
+    "express": "^4.17.1",
     "socket.io": "^2.3.0"
   }
 }
