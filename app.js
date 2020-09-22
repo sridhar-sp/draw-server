@@ -33,19 +33,6 @@ server.on("connection", socket => {
 
 app.get('/', (req, res) => {
     res.send("Welcome")
-
-    for (i = 0; i < 100000; i++) {
-        //res.send(`<br> i ${i} j 0 k 0`)
-        for (j = 0; j < 1000000; j++) {
-            //res.send(`<br> i ${i} j ${j} k 0`)
-            for (k= 0; k < 1000000; k++) {
-            
-            }
-    
-        }
-    }
-    res.send(`<br> i ${i} j ${j} k ${k}`)
-
 });
 
 
