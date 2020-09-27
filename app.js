@@ -1,15 +1,14 @@
 
+const config = require('./src/config/index.js')
 const util = require('util');
 const express = require('express');
 const bodyParser = require('body-parser');
 const SoketServer = require('socket.io');
-const FALLBACK_PORT = 3000;
-const PORT = process.env.PORT || FALLBACK_PORT;
 
 const app = express()
 
-const httpServer = app.listen(PORT, () => {
-    console.log(`Listening on PORT ${PORT}`)
+const httpServer = app.listen(config.port, () => {
+    console.log(`Listening on PORT ${config.port}`)
 });
 
 const socketIOServer = SoketServer(httpServer)
@@ -67,7 +66,7 @@ var i = 0;
 
 app.get('/', (req, res) => {
     i++;
-    res.send("Welcome " + i+process.env.CONFIG_VAR)
+    res.send("Welcome " + i+" "+config.port)
 });
 
 app.post('/post',(req,res)=>{
