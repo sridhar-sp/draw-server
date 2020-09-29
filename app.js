@@ -69,12 +69,6 @@ app.get('/', (req, res) => {
     res.send("Welcome " + i+" "+config.port)
 });
 
-app.post('/post',(req,res)=>{
-
-    console.log("POST method :"+req.body.a)
-    res.send(getObjInfo(req.body))
-});
-
 function getObjInfo(obj){
     return util.inspect(obj,false,null,true);
 }
