@@ -4,6 +4,7 @@ const util = require('util');
 const express = require('express');
 const bodyParser = require('body-parser');
 const SoketServer = require('socket.io');
+const { SSL_OP_EPHEMERAL_RSA } = require('constants');
 
 const app = express()
 
@@ -49,15 +50,9 @@ var middleware = function (req, res, next) {
     next()
 }
 
-var secondMiddleware = (req, res, next) => {
-    console.log("Second Middle ware is called")
-    next()
-}
-
 app.use(bodyParser.json());
 
 app.use(middleware)
-app.use(secondMiddleware)
 
 // app.use('/api',require('./src/routes/api/routeOne.js'))
 app.use('/api', require('./src/routes/api'))
@@ -68,6 +63,7 @@ app.get('/', (req, res) => {
     i++;
     res.send("Welcome " + i+" "+config.port)
 });
+
 
 function getObjInfo(obj){
     return util.inspect(obj,false,null,true);

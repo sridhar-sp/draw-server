@@ -1,10 +1,7 @@
-const tokenService = require('../services/TokenService.js')
-const Error = require('../models/Error')
+const Error = require('../models/Error.js')
 
-const authValidator = function (req, res, next) {
+const accessTokenValidator = function (req, res, next) {
     const authorization = req.headers.authorization;
-
-    console.log("Auth validator " + authorization)
     
     const accessToken = extractToken(authorization)
     if (!accessToken) {
@@ -12,13 +9,8 @@ const authValidator = function (req, res, next) {
         return;
     }
 
-    const payload = tokenService.verifyAccessToken(accessToken)
-    console.log("Payload "+payload)
-    if (payload == null) {
-        res.status(401).json(Error.unAuthorised());
-        return;
-    }    
-    
+    req.accessToken = accessToken;
+
     next()
 }
 
@@ -34,4 +26,5 @@ const extractToken = function (authorizationValue) {
     return authFields[1]
 }
 
-module.exports = authValidator;
+module.exports = accessTokenValidator
+
