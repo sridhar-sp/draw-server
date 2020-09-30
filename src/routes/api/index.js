@@ -4,13 +4,11 @@ const accessTokenAuthMiddleware = require('../../middlewares/accessTokenAuthMidd
 
 const router = express.Router();
 
-//router.use(require('./login.js'))
 router.use(require('./token.js'))
 
 router.use(accessTokenValidator)
 router.use(accessTokenAuthMiddleware)
 
 router.use(require('./room.js'))
-
 
 module.exports = router;

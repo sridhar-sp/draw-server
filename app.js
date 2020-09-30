@@ -4,7 +4,6 @@ const util = require('util');
 const express = require('express');
 const bodyParser = require('body-parser');
 const SoketServer = require('socket.io');
-const { SSL_OP_EPHEMERAL_RSA } = require('constants');
 
 const app = express()
 
@@ -63,7 +62,6 @@ app.get('/', (req, res) => {
     i++;
     res.send("Welcome " + i+" "+config.port)
 });
-
 
 function getObjInfo(obj){
     return util.inspect(obj,false,null,true);
