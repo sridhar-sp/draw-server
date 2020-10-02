@@ -1,5 +1,5 @@
 const firebaseAdmin = require('../firebase/firebase.js')
-const Error = require('../models/Error.js');
+const Error = require('../models/ErrorResponse.js');
 
 const firebaseAuthMiddleware = function (req, res, next) {
     

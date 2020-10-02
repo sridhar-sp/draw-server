@@ -1,4 +1,4 @@
-const Error = require('../models/Error.js')
+const Error = require('../models/ErrorResponse.js')
 
 const accessTokenValidator = function (req, res, next) {
     const authorization = req.headers.authorization;
