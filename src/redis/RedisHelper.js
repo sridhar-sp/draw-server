@@ -1,10 +1,11 @@
 const redis = require('redis')
+const config = require('../config/index.js')
 
 class RedisHelper {
 
     constructor() {
         console.log("Constructing RedisHelper")
-        this.redisClient = redis.createClient()
+        this.redisClient = redis.createClient(config.redisURL, {no_ready_check: true});
         this.redisClient.on("error", function (error) {
             console.error(error);
         });

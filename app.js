@@ -49,6 +49,10 @@ var middleware = function (req, res, next) {
     next()
 }
 
+app.get('/api/test',(req,res)=>{
+    res.send("Welcome " + i+" "+config.port)
+})
+
 app.use(bodyParser.json());
 
 app.use(middleware)

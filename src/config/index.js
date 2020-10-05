@@ -12,6 +12,7 @@ module.exports = {
         secret: process.env.REFRESH_TOKEN_SECRET,
         lifeInSeconds: process.env.REFRESH_TOKEN_LIFE_IN_SECONDS
     },
-    firebaseConfig: JSON.parse(process.env.FIREBASE_CONFIG)
+    firebaseConfig: JSON.parse(process.env.FIREBASE_CONFIG),
+    redisURL  : process.env.REDIS_URL
 
 }
