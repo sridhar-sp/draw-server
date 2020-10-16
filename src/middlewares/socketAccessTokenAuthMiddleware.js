@@ -11,7 +11,7 @@ const socketAccessTokenMiddleware = function (socket, next) {
 
     if (accessToken === null || accessToken === '' || gameKey == null || gameKey === '') {
         next(new Error("Unauthorized"))
-        setTimeout(function () { socket.disconnect() }, 3000)
+        setTimeout(function () { socket.disconnect() }, 1500)
         return
     }
 

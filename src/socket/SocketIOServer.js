@@ -40,13 +40,13 @@ class SocketIOServer {
                     ErrorResponse.createErrorResponse(500, "Failed to join room")
 
                 socket.emit(SocketEvents.ROOM.JOINED, response)
-                socket.broadcast.emit(SocketEvents.ROOM.MEMBER_ADD,
+                socket.to(socket.gameKey).emit(SocketEvents.ROOM.MEMBER_ADD,
                     SuccessResponse.createSuccessResponse(socket.userRecord))
             })
 
             socket.on('disconnect', function () {
                 console.log(`user disconnected ${socket.id}`);
-                socket.broadcast.emit(SocketEvents.ROOM.MEMBER_LEFT,
+                socket.to(socket.gameKey).emit(SocketEvents.ROOM.MEMBER_LEFT,
                     SuccessResponse.createSuccessResponse(socket.userRecord))
             });
 
