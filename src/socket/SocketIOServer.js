@@ -59,6 +59,11 @@ class SocketIOServer {
                     })
             })
 
+            socket.on(SocketEvents.GAME.REQUEST_START_GAME, (data) => {
+                socket.admin = true
+                this.socketServer.in(socket.gameKey).emit(SocketEvents.GAME.START_GAME)
+            })
+
         })
     }
 
@@ -83,30 +88,6 @@ class SocketIOServer {
             });
         })
 
-    }
-
-    _foo() {
-        this.socketServer.on("connection", socket => {
-
-            socket.on("global_channel", data => {
-                console.log(`global_channel ${socket.id} ${data}`)
-
-                socket.broadcast.emit("global_channel", data)
-
-                console.log("Room details acccess from main " + getObjInfo(socketIOServer.adapter.rooms))
-
-                this.socketServer.to("play_area").emit("global_channel", "Data emitted for room" + data)
-
-                // if (data.indexOf('1') != -1) {
-                //     socket.broadcast.emit("global_channel", `broadcasting from ${socket.id} msg is ${data}`)
-                // } else if (data.indexOf('2') != -1) {
-                //     socket.emit("global_channel", "Sending data to onlt the specific socket")
-                // } else {
-                //     server.emit("global_channel", `Server sending to all ${data}`)
-                // }
-
-            })
-        })
     }
 
     getObjInfo(obj) {
