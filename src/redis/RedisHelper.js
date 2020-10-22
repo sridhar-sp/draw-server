@@ -5,7 +5,7 @@ class RedisHelper {
 
     constructor() {
         console.log("Constructing RedisHelper")
-        this.redisClient = redis.createClient(config.redisURL, {no_ready_check: true});
+        this.redisClient = redis.createClient(config.redisURL, { no_ready_check: true });
         this.redisClient.on("error", function (error) {
             console.error(error);
         });
@@ -20,10 +20,20 @@ class RedisHelper {
         });
     }
 
-    getString(key){
+    getString(key) {
         return new Promise((resolve, reject) => {
             this.redisClient.get(key, (err, reply) => {
                 if (err == null) resolve(reply)
+                else reject(err)
+            })
+        });
+    }
+
+    delete(key) {
+        return new Promise((resolve, reject) => {
+            this.redisClient.del(key, (err, reply) => {
+                if (err == null)
+                    resolve(reply)
                 else reject(err)
             })
         });

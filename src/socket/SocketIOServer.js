@@ -2,10 +2,15 @@
 const SoketServer = require('socket.io');
 const SocketEvents = require('./SocketEvents.js')
 const socketIOAuthMiddleware = require('../middlewares/socketAccessTokenAuthMiddleware.js');
+const GamePlayInfoRepository = require('../repositories/GamePlayInfoRepository')
 const ErrorResponse = require('../models/ErrorResponse.js')
 const SuccessResponse = require('../models/SuccessResponse.js')
+const GamePlayInfo = require('../models/GamePlayInfo.js')
+const GameScreen = require('../models/GameScreen.js')
 
 const util = require('util')
+
+const gamePlayInfoResposioty = new GamePlayInfoRepository()
 
 class SocketIOServer {
 
@@ -42,6 +47,10 @@ class SocketIOServer {
                 socket.emit(SocketEvents.ROOM.JOINED, response)
                 socket.to(socket.gameKey).emit(SocketEvents.ROOM.MEMBER_ADD,
                     SuccessResponse.createSuccessResponse(socket.userRecord))
+
+                const memberCount = this.socketServer.sockets.adapter.rooms[socket.gameKey].length
+                if (memberCount == 1)
+                    gamePlayInfoResposioty.createGameInfo(socket.gameKey)
             })
 
             socket.on('disconnect', function () {
@@ -59,9 +68,20 @@ class SocketIOServer {
                     })
             })
 
-            socket.on(SocketEvents.GAME.REQUEST_START_GAME, (data) => {
+            socket.on(SocketEvents.GAME.REQUEST_START_GAME, async (data) => {
+
+                const result = await gamePlayInfoResposioty.updateGameStatus(socket.gameKey,
+                    GamePlayInfo.GamePlayStatus.STARTED)
+
                 socket.admin = true
                 this.socketServer.in(socket.gameKey).emit(SocketEvents.GAME.START_GAME)
+            })
+
+            socket.on(SocketEvents.GAME.REQUEST_GAME_SCREEN_STATE, (data) => {
+                const gameScreenState = socket.admin ? GameScreen.State.DRAW : GameScreen.State.VIEW
+                console.log("gameScreenState " + gameScreenState)
+                socket.emit(SocketEvents.GAME.GAME_SCREEN_STATE_RESULT,
+                    SuccessResponse.createSuccessResponse(gameScreenState))
             })
 
         })
