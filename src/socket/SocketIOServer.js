@@ -55,6 +55,7 @@ class SocketIOServer {
 
             socket.on('disconnect', function () {
                 console.log(`user disconnected ${socket.id}`);
+                socket.leave(socket.gameKey)
                 socket.to(socket.gameKey).emit(SocketEvents.ROOM.MEMBER_LEFT,
                     SuccessResponse.createSuccessResponse(socket.userRecord))
             });

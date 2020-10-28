@@ -1,10 +1,12 @@
 class GamePlayInfo {
 
-    static GamePlayStatus = {
-        NOT_STARTED: 1,
-        STARTED: 2,
-        FINISHED: 3,
-    }
+    static GamePlayStatus = Object.freeze(
+        {
+            NOT_STARTED: 1,
+            STARTED: 2,
+            FINISHED: 3,
+        }
+    )
 
     constructor(gameKey, gamePlayStatus) {
         this.gameKey = gameKey
