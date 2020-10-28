@@ -11,8 +11,7 @@ app.use(bodyParser.json());
 app.use('/api', require('./src/routes/api'))
 
 app.get('/', (req, res) => {
-    i++;
-    res.send("Welcome to Draw & Guess, Port :: " + i + " " + config.port)
+    res.send("Welcome to Draw & Guess, Port :: " + config.port)
 });
 
 const httpServer = app.listen(config.port, () => {
