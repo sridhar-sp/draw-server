@@ -85,6 +85,14 @@ class SocketIOServer {
                     SuccessResponse.createSuccessResponse(gameScreenState))
             })
 
+            socket.on(SocketEvents.GAME.DRAWING_EVENT, (data) => {
+                socket.to(socket.gameKey).emit(SocketEvents.GAME.DRAWING_EVENT, data)
+            })
+
+            socket.on(SocketEvents.GAME.ANSWER_EVENT, (data) => {
+                console.log(`Answer ${data}`)
+            })
+
         })
     }
 
