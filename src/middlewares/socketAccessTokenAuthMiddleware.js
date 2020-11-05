@@ -1,5 +1,5 @@
 const firebaseAdmin = require('../firebase/firebase.js')
-const TokenService = require('../services/TokenService.js')
+const TokenService = require('../services/TokenService')
 const SimpleUserRecord = require('../models/SimpleUserRecord.js')
 
 const tokenService = new TokenService()

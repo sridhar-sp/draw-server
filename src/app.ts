@@ -1,16 +1,16 @@
 
-const config = require('./src/config/index.js')
-const express = require('express');
+const config = require('./config/index.js')
+import express, { Request, Response } from 'express';
 const bodyParser = require('body-parser');
-const SocketIOServer = require('./src/socket/SocketIOServer.js')
+const SocketIOServer = require('./socket/SocketIOServer.js')
 
-const app = express()
+const app: express.Application = express()
 
 app.use(bodyParser.json());
 
-app.use('/api', require('./src/routes/api'))
+app.use('/api', require('./routes/api'))
 
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
     res.send("Welcome to Draw & Guess, Port :: " + config.port)
 });
 

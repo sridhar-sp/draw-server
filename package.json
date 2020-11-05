@@ -2,10 +2,11 @@
   "name": "draw-server",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon app.js"
+    "start": "tsc && node build/app.js",
+    "tsc": "tsc",
+    "dev": "tsnd --respawn  ./src/app.ts"
   },
   "repository": {
     "type": "git",
@@ -25,8 +26,12 @@
     "express": "^4.17.1",
     "firebase-admin": "^9.2.0",
     "jsonwebtoken": "^8.5.1",
-    "nodemon": "^2.0.4",
     "redis": "^3.0.2",
-    "socket.io": "^2.3.0"
+    "socket.io": "^2.3.0",
+    "typescript": "^4.0.5"
+  },
+  "devDependencies": {
+    "@types/express": "github:types/express",
+    "ts-node-dev": "^1.0.0"
   }
 }

@@ -1,5 +1,5 @@
-const TokenService = require('../services/TokenService.js')
-const TokenRepository = require('../repositories/TokenRepository.js');
+const TokenService = require('../services/TokenService')
+const TokenRepository = require('../repositories/TokenRepository');
 const Error = require('../models/ErrorResponse.js');
 const Success = require('../models/SuccessResponse.js');
 const TokenResponse = require('../models/TokenResponse.js');
@@ -54,7 +54,7 @@ class LoginService {
         return new Promise((resolve, reject) => {
             const payload = this.tokenService.verifyRefreshToken(refreshToken)
             if (payload != null)
-                resolve(payload) 
+                resolve(payload)
             else
                 reject("error while extracing refresh token payload")
         })
