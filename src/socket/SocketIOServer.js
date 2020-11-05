@@ -6,6 +6,7 @@ const RoomEventHandlerService = require('../services/RoomEventHandlerService.js'
 const GameEventHandlerService = require('../services/GameEventHandlerService.js');
 
 const util = require('util');
+const { Socket } = require('dgram');
 
 class SocketIOServer {
 
@@ -37,12 +38,12 @@ class SocketIOServer {
 
             socket.join(socket.gameKey, (err) => {
                 this.roomEventHandlerService.handleJoin(socket, err)
-
                 this.gameEventHandlerService.handleJoin(socket)
             })
 
             socket.on('disconnect', () => {
                 this.roomEventHandlerService.handleLeave(socket)
+                this.gameEventHandlerService.handleLeave(socket)
             });
 
             socket.on(SocketEvents.ROOM.FETCH_USER_RECORDS, (data) => {

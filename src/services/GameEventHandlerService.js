@@ -11,14 +11,16 @@ class GameEventHandlerService {
         this.gamePlayInfoResposioty = new GamePlayInfoRepository()
     }
 
-    handleJoin(socket) {
-        const memberCount = this.socketServer.sockets.adapter.rooms[socket.gameKey].length
-        if (memberCount == 1)
-            this.gamePlayInfoResposioty.createGameInfo(socket.gameKey)
+    async handleJoin(socket) {
+        this.gamePlayInfoResposioty.addParticipant(socket.gameKey, socket.id)
+    }
+
+    async handleLeave(socket) {
+        this.gamePlayInfoResposioty.removeParticipant(socket.gameKey, socket.id)
     }
 
     async handleStartGame(socket) {
-        const result = await this.gamePlayInfoResposioty.updateGameStatus(socket.gameKey,
+        await this.gamePlayInfoResposioty.updateGameStatus(socket.gameKey,
             GamePlayInfo.GamePlayStatus.STARTED)
 
         socket.admin = true
