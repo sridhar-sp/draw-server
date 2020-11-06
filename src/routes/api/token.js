@@ -5,7 +5,7 @@ const firebaseAuthMiddleware = require('../../middlewares/firebaseAuthMiddleware
 const accessTokenValidator = require('../../validators/accessTokenValidator.js')
 const LoginService = require('../../services/LoginService.js')
 const config = require('../../config/index.js')
-const Success = require('../../models/SuccessResponse.js')
+import SuccessResponse from '../../models/SuccessResponse'
 const TokenResponse = require('../../models/TokenResponse.js')
 
 
@@ -15,8 +15,8 @@ const loginService = new LoginService()
 router.post('/token', firebaseTokenValidator, firebaseAuthMiddleware, async (req, res) => {
 
     const token = await loginService.authenticateUser(req.uid)
-    
-    res.status(200).json(Success.createSuccessResponse(TokenResponse.create(token)))
+
+    res.status(200).json(SuccessResponse.createSuccessResponse(TokenResponse.create(token)))
 })
 
 router.post('/refreshToken', accessTokenValidator, async (req, res) => {

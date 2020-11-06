@@ -3,7 +3,7 @@ const SoketServer = require('socket.io');
 const SocketEvents = require('./SocketEvents.js')
 const socketIOAuthMiddleware = require('../middlewares/socketAccessTokenAuthMiddleware.js');
 const RoomEventHandlerService = require('../services/RoomEventHandlerService.js');
-const GameEventHandlerService = require('../services/GameEventHandlerService');
+import GameEventHandlerService from '../services/GameEventHandlerService'
 
 const util = require('util');
 

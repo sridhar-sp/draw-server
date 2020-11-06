@@ -1,7 +1,7 @@
 const TokenService = require('../services/TokenService')
 const TokenRepository = require('../repositories/TokenRepository');
-const Error = require('../models/ErrorResponse.js');
-const Success = require('../models/SuccessResponse.js');
+import ErrorResponse from '../models/ErrorResponse';
+import SuccessResponse from '../models/SuccessResponse';
 const TokenResponse = require('../models/TokenResponse.js');
 const { use } = require('../routes/api/token.js');
 
@@ -36,8 +36,8 @@ class LoginService {
             .then(accessTokenPayload => this.tokenRepository.getRefreshToken(accessTokenPayload.userId))
             .then(refreshToken => this._verifyRefreshToken(refreshToken))
             .then(refreshTokenPayload => this.tokenService.generateAccessToken(refreshTokenPayload.userId))
-            .then(accessToken => Success.createSuccessResponse(TokenResponse.create(accessToken)))
-            .catch(error => Error.unAuthorised())
+            .then(accessToken => SuccessResponse.createSuccessResponse(TokenResponse.create(accessToken)))
+            .catch(error => ErrorResponse.unAuthorised())
     }
 
     _verifyAccessTokenIgnoreExpiry(accessToken) {

@@ -1,5 +1,5 @@
 const TokenService = require('../services/TokenService')
-const Error = require('../models/ErrorResponse.js')
+import ErrorResponse from '../models/ErrorResponse'
 
 const tokenService = new TokenService()
 
@@ -9,7 +9,7 @@ const accessTokenAuthMiddleware = function (req, res, next) {
     const payload = tokenService.verifyAccessToken(req.accessToken)
 
     if (payload == null) {
-        res.status(401).json(Error.unAuthorised());
+        res.status(401).json(ErrorResponse.unAuthorised());
         return;
     }
 

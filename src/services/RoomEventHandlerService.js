@@ -1,6 +1,6 @@
 const SocketEvents = require('../socket/SocketEvents.js')
-const ErrorResponse = require('../models/ErrorResponse.js')
-const SuccessResponse = require('../models/SuccessResponse.js')
+import ErrorResponse from '../models/ErrorResponse'
+import SuccessResponse from '../models/SuccessResponse'
 
 class RoomEventHandlerService {
 

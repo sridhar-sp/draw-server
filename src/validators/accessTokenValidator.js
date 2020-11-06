@@ -1,11 +1,11 @@
-const Error = require('../models/ErrorResponse.js')
+import ErrorResponse from '../models/ErrorResponse'
 
 const accessTokenValidator = function (req, res, next) {
     const authorization = req.headers.authorization;
-    
+
     const accessToken = extractToken(authorization)
     if (!accessToken) {
-        res.status(401).json(Error.unAuthorised())
+        res.status(401).json(ErrorResponse.unAuthorised())
         return;
     }
 

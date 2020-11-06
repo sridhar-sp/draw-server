@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io"
 
-const GamePlayInfoRepository = require('../repositories/GamePlayInfoRepository')
-const SuccessResponse = require('../models/SuccessResponse.js')
+import GamePlayInfoRepository from '../repositories/GamePlayInfoRepository'
+import SuccessResponse from '../models/SuccessResponse'
 const GamePlayInfo = require('../models/GamePlayInfo.js')
 const GameScreen = require('../models/GameScreen.js')
 const SocketEvents = require('../socket/SocketEvents.js')
@@ -9,7 +9,7 @@ const SocketEvents = require('../socket/SocketEvents.js')
 class GameEventHandlerService {
 
     socketServer: Server
-    gamePlayInfoResposioty: typeof GamePlayInfoRepository
+    gamePlayInfoResposioty: GamePlayInfoRepository
 
     constructor(socketServer: Server) {
         this.socketServer = socketServer;
