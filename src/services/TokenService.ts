@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/index.js')
-const JWTAccessTokenPayload = require('../models/JWTAccessTokenPayload.js');
-const JWTRefreshTokenPayload = require('../models/JWTRefreshTokenPayload.js');
+import JWTAccessTokenPayload from '../models/JWTAccessTokenPayload'
+import JWTRefreshTokenPayload from '../models/JWTRefreshTokenPayload';
 
 class TokenService {
 

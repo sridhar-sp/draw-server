@@ -1,9 +1,12 @@
 class JWTAccessTokenPayload {
-    constructor(userId) {
+
+    userId: string
+
+    constructor(userId: string) {
         this.userId = userId;
     }
 
-    static create(userId) {
+    static create(userId: string) {
         return new JWTAccessTokenPayload(userId);
     }
 
@@ -13,4 +16,4 @@ class JWTAccessTokenPayload {
 
 }
 
-module.exports = JWTAccessTokenPayload
+export default JWTAccessTokenPayload
