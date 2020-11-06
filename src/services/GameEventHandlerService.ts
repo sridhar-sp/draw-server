@@ -2,8 +2,8 @@ import { Server, Socket } from "socket.io"
 
 import GamePlayInfoRepository from '../repositories/GamePlayInfoRepository'
 import SuccessResponse from '../models/SuccessResponse'
-const GamePlayInfo = require('../models/GamePlayInfo.js')
-const GameScreen = require('../models/GameScreen.js')
+import GamePlayStatus from '../models/GamePlayStatus'
+import GameScreen from '../models/GameScreen'
 const SocketEvents = require('../socket/SocketEvents.js')
 
 class GameEventHandlerService {
@@ -26,7 +26,7 @@ class GameEventHandlerService {
 
     async handleStartGame(socket: Socket) {
         await this.gamePlayInfoResposioty.updateGameStatus(this._getGameKeyFromSocket(socket),
-            GamePlayInfo.GamePlayStatus.STARTED)
+            GamePlayStatus.STARTED)
 
         socket.handshake.headers.admin = true
         this.socketServer.in(this._getGameKeyFromSocket(socket)).emit(SocketEvents.GAME.START_GAME)

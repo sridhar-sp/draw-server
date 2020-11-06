@@ -5,4 +5,4 @@ class GameScreen {
     })
 }
 
-module.exports = GameScreen
+export default GameScreen

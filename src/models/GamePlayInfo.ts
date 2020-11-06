@@ -1,23 +1,25 @@
 const logger = require('../logger/logger.js')
-class GamePlayInfo {
-    static GamePlayStatus = Object.freeze(
-        {
-            NOT_STARTED: 1,
-            STARTED: 2,
-            FINISHED: 3,
-        }
-    )
+import Participant from './Participant'
+import GamePlayStatus from './GamePlayStatus'
 
-    static createCopy(copyObj) {
+class GamePlayInfo {
+
+    static createCopy(copyObj: GamePlayInfo) {
         return new GamePlayInfo(copyObj.gameKey, copyObj.gamePlayStatus, copyObj.noOfRounds, copyObj.currentRound,
             copyObj.participants)
     }
 
-    static create(gameKey) {
-        return new GamePlayInfo(gameKey, GamePlayInfo.GamePlayStatus.NOT_STARTED, 1, 0, [])
+    static create(gameKey: string) {
+        return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, [])
     }
+    gameKey: string
+    gamePlayStatus: GamePlayStatus
+    noOfRounds: number
+    currentRound: number
+    participants: Participant[]
 
-    constructor(gameKey, gamePlayStatus, noOfRounds, currentRound, participants) {
+    constructor(gameKey: string, gamePlayStatus: GamePlayStatus, noOfRounds: number, currentRound: number,
+        participants: Participant[]) {
         this.gameKey = gameKey
         this.gamePlayStatus = gamePlayStatus
         this.noOfRounds = noOfRounds
@@ -25,11 +27,11 @@ class GamePlayInfo {
         this.participants = participants == null ? [] : participants
     }
 
-    updateGamePlayStatus(gamePlayStatus) {
+    updateGamePlayStatus(gamePlayStatus: GamePlayStatus) {
         this.gamePlayStatus = gamePlayStatus
     }
 
-    addParticipant(participant) {
+    addParticipant(participant: Participant) {
         const index = this.findParticipant(participant.socketId)
 
         if (index != -1) {
@@ -43,7 +45,7 @@ class GamePlayInfo {
         return participant
     }
 
-    removeParticipant(socketId) {
+    removeParticipant(socketId: string) {
         const index = this.findParticipant(socketId)
 
         if (index == -1) {
@@ -58,11 +60,11 @@ class GamePlayInfo {
         return paricipant
     }
 
-    findParticipant(socketId) {
+    findParticipant(socketId: string) {
         if (!this.participants || this.participants.length == 0)
             return -1
         return this.participants.findIndex(participant => participant.socketId == socketId)
     }
 }
 
-module.exports = GamePlayInfo
+export default GamePlayInfo

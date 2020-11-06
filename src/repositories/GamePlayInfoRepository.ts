@@ -1,6 +1,7 @@
 import redisHelper from '../redis/RedisHelper.js'
-const GamePlayInfo = require('../models/GamePlayInfo.js')
-const Participant = require('../models/Participant.js')
+import GamePlayInfo from '../models/GamePlayInfo'
+import Participant from '../models/Participant'
+import GamePlayStatus from '../models/GamePlayStatus'
 const logger = require('../logger/logger.js')
 
 class GamePlayInfoRepository {
@@ -24,7 +25,7 @@ class GamePlayInfoRepository {
         await redisHelper.setString(gameKey, JSON.stringify(gameInfo))
     }
 
-    async updateGameStatus(gameKey: string, gamePlayStatus: string) {
+    async updateGameStatus(gameKey: string, gamePlayStatus: GamePlayStatus) {
         logger.log(`updateGameStatus ${gamePlayStatus} for game ${gameKey}`)
         const gameInfo = await this.getGameInfo(gameKey)
         gameInfo.updateGamePlayStatus(gamePlayStatus)
