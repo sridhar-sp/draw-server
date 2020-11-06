@@ -3,10 +3,9 @@ const SoketServer = require('socket.io');
 const SocketEvents = require('./SocketEvents.js')
 const socketIOAuthMiddleware = require('../middlewares/socketAccessTokenAuthMiddleware.js');
 const RoomEventHandlerService = require('../services/RoomEventHandlerService.js');
-const GameEventHandlerService = require('../services/GameEventHandlerService.js');
+const GameEventHandlerService = require('../services/GameEventHandlerService');
 
 const util = require('util');
-const { Socket } = require('dgram');
 
 class SocketIOServer {
 
@@ -35,6 +34,8 @@ class SocketIOServer {
             console.log(`Socket connected ${socket.id}
             Gamekey = ${socket.gameKey} 
             name = ${socket.userRecord.displayName}`)
+
+            // console.log("******************************* " + socket['gameKey'])
 
             socket.join(socket.gameKey, (err) => {
                 this.roomEventHandlerService.handleJoin(socket, err)

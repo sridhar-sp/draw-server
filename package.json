@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@types/express": "github:types/express",
+    "@types/socket.io": "^2.1.11",
     "ts-node-dev": "^1.0.0"
   }
 }
