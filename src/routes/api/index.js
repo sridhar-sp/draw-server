@@ -9,6 +9,6 @@ router.use(require('./token'))
 router.use(accessTokenValidator)
 router.use(accessTokenAuthMiddleware)
 
-router.use(require('./room.js'))
+router.use(require('./room'))
 
 module.exports = router;
