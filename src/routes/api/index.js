@@ -4,7 +4,7 @@ const accessTokenAuthMiddleware = require('../../middlewares/accessTokenAuthMidd
 
 const router = express.Router();
 
-router.use(require('./token.js'))
+router.use(require('./token'))
 
 router.use(accessTokenValidator)
 router.use(accessTokenAuthMiddleware)
