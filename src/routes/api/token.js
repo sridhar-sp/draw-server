@@ -6,7 +6,7 @@ const accessTokenValidator = require('../../validators/accessTokenValidator.js')
 const LoginService = require('../../services/LoginService.js')
 const config = require('../../config/index.js')
 import SuccessResponse from '../../models/SuccessResponse'
-const TokenResponse = require('../../models/TokenResponse.js')
+import TokenResponse from '../../models/TokenResponse'
 
 
 const router = express.Router()

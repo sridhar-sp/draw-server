@@ -2,7 +2,7 @@ import TokenService from '../services/TokenService'
 const TokenRepository = require('../repositories/TokenRepository');
 import ErrorResponse from '../models/ErrorResponse';
 import SuccessResponse from '../models/SuccessResponse';
-const TokenResponse = require('../models/TokenResponse.js');
+import TokenResponse from '../models/TokenResponse'
 
 class LoginService {
 
