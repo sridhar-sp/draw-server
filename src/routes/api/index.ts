@@ -1,6 +1,6 @@
 import express from 'express';
 import accessTokenValidator from '../../validators/accessTokenValidator'
-const accessTokenAuthMiddleware = require('../../middlewares/accessTokenAuthMiddleware.js');
+import accessTokenAuthMiddleware from '../../middlewares/accessTokenAuthMiddleware'
 
 const router = express.Router();
 

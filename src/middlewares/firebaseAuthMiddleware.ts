@@ -1,4 +1,4 @@
-import { Express, NextFunction, Response } from 'express';
+import { NextFunction, Response } from 'express';
 import firebaseAdmin from '../firebase/firebase'
 import ErrorResponse from '../models/ErrorResponse';
 
