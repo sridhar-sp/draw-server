@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 import express from 'express';
-const firebaseTokenValidator = require('../../validators/firebaseTokenValidator.js')
+import firebaseTokenValidator from '../../validators/firebaseTokenValidator'
 const firebaseAuthMiddleware = require('../../middlewares/firebaseAuthMiddleware.js')
 const accessTokenValidator = require('../../validators/accessTokenValidator.js')
 import LoginService from '../../services/LoginService'

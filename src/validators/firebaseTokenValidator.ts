@@ -1,7 +1,8 @@
+import { NextFunction, Response } from 'express';
 import firebaseAdmin from '../firebase/firebase'
 import ErrorResponse from '../models/ErrorResponse';
 
-const firebaseTokenValidator = function (req, res, next) {
+const firebaseTokenValidator = function (req: any, res: Response, next: NextFunction) {
 
     const userToken = req.body.userToken
 
@@ -13,4 +14,4 @@ const firebaseTokenValidator = function (req, res, next) {
 }
 
 
-module.exports = firebaseTokenValidator;
+export default firebaseTokenValidator;
