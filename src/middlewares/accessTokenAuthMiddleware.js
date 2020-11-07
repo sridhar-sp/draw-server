@@ -1,4 +1,4 @@
-const TokenService = require('../services/TokenService')
+import TokenService from '../services/TokenService'
 import ErrorResponse from '../models/ErrorResponse'
 
 const tokenService = new TokenService()

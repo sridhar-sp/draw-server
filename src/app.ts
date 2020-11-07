@@ -2,7 +2,7 @@
 const config = require('./config/index.js')
 import express, { Request, Response } from 'express';
 const bodyParser = require('body-parser');
-const SocketIOServer = require('./socket/SocketIOServer.js')
+import SocketIOServer from './socket/SocketIOServer'
 
 const app: express.Application = express()
 

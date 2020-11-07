@@ -1,10 +1,12 @@
 const firebaseAdmin = require('../firebase/firebase.js')
-const TokenService = require('../services/TokenService')
-const SimpleUserRecord = require('../models/SimpleUserRecord.js')
+import TokenService from '../services/TokenService'
+import { Socket } from 'socket.io'
+import JWTAccessTokenPayload from '../models/JWTAccessTokenPayload'
+import SimpleUserRecord from '../models/SimpleUserRecord'
 
 const tokenService = new TokenService()
 
-const socketAccessTokenMiddleware = function (socket, next) {
+const socketAccessTokenMiddleware = function (socket: Socket, next: Function) {
 
     const accessToken = socket.handshake.query.token
     const gameKey = socket.handshake.query.gameKey
@@ -15,13 +17,10 @@ const socketAccessTokenMiddleware = function (socket, next) {
         return
     }
 
-    socket.accessToken = accessToken
-    socket.gameKey = gameKey
-
     verifyAccessToken(accessToken)
         .then(payload => fetchUserDetails(payload.userId))
         .then(userRecord => {
-            socket.userRecord = userRecord
+            socket.request.userRecord = userRecord
             next()
         }).catch(error => {
             next(new Error("Unauthorized"))
@@ -29,8 +28,8 @@ const socketAccessTokenMiddleware = function (socket, next) {
         })
 }
 
-const verifyAccessToken = function (accessToken) {
-    return new Promise((resolve, reject) => {
+const verifyAccessToken = function (accessToken: string) {
+    return new Promise((resolve: (jwtAccessTokenPayload: JWTAccessTokenPayload) => void, reject: () => void) => {
         const payload = tokenService.verifyAccessToken(accessToken)
         if (payload != null)
             resolve(payload)
@@ -39,17 +38,17 @@ const verifyAccessToken = function (accessToken) {
     })
 }
 
-const fetchUserDetails = function (userId) {
-    return new Promise((resolve, reject) => {
+const fetchUserDetails = function (userId: string) {
+    return new Promise((resolve: (userRecord: SimpleUserRecord) => void, reject: (error: Error) => void) => {
         firebaseAdmin.auth().getUser(userId)
-            .then(function (userRecord) {
+            .then(function (userRecord: any) {
                 resolve(SimpleUserRecord.fromFirebaseUserRecord(userRecord.toJSON()))
             })
-            .catch(function (error) {
+            .catch(function (error: Error) {
                 console.log('Error fetching user data:', error);
                 reject(error)
             });
     })
 }
 
-module.exports = socketAccessTokenMiddleware
+export default socketAccessTokenMiddleware
