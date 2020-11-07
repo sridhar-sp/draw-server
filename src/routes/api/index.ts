@@ -1,4 +1,4 @@
-const express = require('express');
+import express from 'express';
 const accessTokenValidator = require('../../validators/accessTokenValidator.js')
 const accessTokenAuthMiddleware = require('../../middlewares/accessTokenAuthMiddleware.js');
 
