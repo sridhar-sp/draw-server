@@ -1,6 +1,7 @@
+import { NextFunction, Response } from 'express';
 import ErrorResponse from '../models/ErrorResponse'
 
-const accessTokenValidator = function (req, res, next) {
+const accessTokenValidator = function (req: any, res: Response, next: NextFunction) {
     const authorization = req.headers.authorization;
 
     const accessToken = extractToken(authorization)
@@ -14,8 +15,8 @@ const accessTokenValidator = function (req, res, next) {
     next()
 }
 
-const extractToken = function (authorizationValue) {
-    if (!authorizationValue || !authorizationValue instanceof String || authorizationValue.trim() === '')
+const extractToken = function (authorizationValue: any) {
+    if (!authorizationValue || !(authorizationValue instanceof String) || authorizationValue.trim() === '')
         return null
 
     const authFields = authorizationValue.split(' ')
@@ -26,5 +27,5 @@ const extractToken = function (authorizationValue) {
     return authFields[1]
 }
 
-module.exports = accessTokenValidator
+export default accessTokenValidator
 
