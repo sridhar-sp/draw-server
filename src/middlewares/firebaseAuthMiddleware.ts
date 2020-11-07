@@ -1,7 +1,8 @@
+import { Express, NextFunction, Response } from 'express';
 import firebaseAdmin from '../firebase/firebase'
 import ErrorResponse from '../models/ErrorResponse';
 
-const firebaseAuthMiddleware = function (req, res, next) {
+const firebaseAuthMiddleware = function (req: any, res: Response, next: NextFunction) {
 
     firebaseAdmin.auth().verifyIdToken(req.body.userToken)
         .then(function (decodedToken) {
@@ -14,4 +15,4 @@ const firebaseAuthMiddleware = function (req, res, next) {
 }
 
 
-module.exports = firebaseAuthMiddleware;
+export default firebaseAuthMiddleware;
