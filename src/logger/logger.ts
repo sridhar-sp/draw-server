@@ -1,18 +1,18 @@
 class Logger {
 
 
-    log(log) {
+    log(log: string) {
         console.log(log)
     }
 
-    warn(log) {
+    warn(log: string) {
         console.warn(log)
     }
 
-    error(log) {
+    error(log: string) {
         console.error(log)
     }
 
 }
 
-module.exports = new Logger()
+export default new Logger()

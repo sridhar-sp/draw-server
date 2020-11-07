@@ -1,4 +1,4 @@
-const logger = require('../logger/logger.js')
+import logger from '../logger/logger'
 import Participant from './Participant'
 import GamePlayStatus from './GamePlayStatus'
 

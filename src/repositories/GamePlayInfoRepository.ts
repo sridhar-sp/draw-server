@@ -2,7 +2,7 @@ import redisHelper from '../redis/RedisHelper'
 import GamePlayInfo from '../models/GamePlayInfo'
 import Participant from '../models/Participant'
 import GamePlayStatus from '../models/GamePlayStatus'
-const logger = require('../logger/logger.js')
+import logger from '../logger/logger'
 
 class GamePlayInfoRepository {
 
