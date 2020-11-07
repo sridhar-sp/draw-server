@@ -1,4 +1,4 @@
-const redisHelper = require('../redis/RedisHelper.js')
+import redisHelper from '../redis/RedisHelper'
 
 class TokenRepository {
 

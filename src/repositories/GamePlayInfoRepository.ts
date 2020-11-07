@@ -1,4 +1,4 @@
-import redisHelper from '../redis/RedisHelper.js'
+import redisHelper from '../redis/RedisHelper'
 import GamePlayInfo from '../models/GamePlayInfo'
 import Participant from '../models/Participant'
 import GamePlayStatus from '../models/GamePlayStatus'
