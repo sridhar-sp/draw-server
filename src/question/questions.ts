@@ -1,4 +1,4 @@
-module.exports = [
+export default = [
     "Baloon",
     "Fan",
     "Light",

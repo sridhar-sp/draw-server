@@ -1,10 +1,10 @@
-const questionDataset = require('../question/questions.js')
+import questionDataset from '../question/questions'
 
 class QuestionRepository {
     constructor() {
 
     }
-    getQuestions(limit) {
+    getQuestions(limit: number) {
         const questions = []
         for (let i = 0; i < limit; i++) {
             questions.push(questionDataset[Math.floor(Math.random() * questionDataset.length)])
@@ -13,4 +13,4 @@ class QuestionRepository {
     }
 }
 
-module.exports = QuestionRepository
+export default QuestionRepository
