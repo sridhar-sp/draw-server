@@ -3,7 +3,7 @@ const express = require('express');
 const firebaseTokenValidator = require('../../validators/firebaseTokenValidator.js')
 const firebaseAuthMiddleware = require('../../middlewares/firebaseAuthMiddleware.js')
 const accessTokenValidator = require('../../validators/accessTokenValidator.js')
-const LoginService = require('../../services/LoginService.js')
+import LoginService from '../../services/LoginService'
 const config = require('../../config/index.js')
 import SuccessResponse from '../../models/SuccessResponse'
 import TokenResponse from '../../models/TokenResponse'

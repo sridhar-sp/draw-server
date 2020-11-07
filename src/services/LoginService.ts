@@ -1,13 +1,17 @@
 import TokenService from '../services/TokenService'
-const TokenRepository = require('../repositories/TokenRepository');
+import TokenRepository from '../repositories/TokenRepository'
 import ErrorResponse from '../models/ErrorResponse';
 import SuccessResponse from '../models/SuccessResponse';
 import TokenResponse from '../models/TokenResponse'
+import JWTAccessTokenPayload from '../models/JWTAccessTokenPayload';
+import JWTRefreshTokenPayload from '../models/JWTRefreshTokenPayload';
 
 class LoginService {
 
+    tokenService: TokenService
+    tokenRepository: TokenRepository
+
     constructor() {
-        console.log("Constructing LoginService")
         this.tokenService = new TokenService();
         this.tokenRepository = new TokenRepository();
     }
@@ -20,7 +24,7 @@ class LoginService {
      * @param {*} userId UserId Obtained from firebase
      * @return accessToken
      */
-    async authenticateUser(userId) {
+    async authenticateUser(userId: string) {
         const accessToken = this.tokenService.generateAccessToken(userId)
         const refreshToken = this.tokenService.generateRefreshToken(userId)
 
@@ -30,17 +34,17 @@ class LoginService {
         return accessToken
     }
 
-    async authenticateUserBasedOnRefreshToken(accessToken) {
+    async authenticateUserBasedOnRefreshToken(accessToken: string) {
         return this._verifyAccessTokenIgnoreExpiry(accessToken)
             .then(accessTokenPayload => this.tokenRepository.getRefreshToken(accessTokenPayload.userId))
-            .then(refreshToken => this._verifyRefreshToken(refreshToken))
+            .then(refreshToken => this._verifyRefreshToken(refreshToken!))
             .then(refreshTokenPayload => this.tokenService.generateAccessToken(refreshTokenPayload.userId))
             .then(accessToken => SuccessResponse.createSuccessResponse(TokenResponse.create(accessToken)))
             .catch(error => ErrorResponse.unAuthorised())
     }
 
-    _verifyAccessTokenIgnoreExpiry(accessToken) {
-        return new Promise((resolve, reject) => {
+    _verifyAccessTokenIgnoreExpiry(accessToken: string) {
+        return new Promise((resolve: (tokenPayload: JWTAccessTokenPayload) => void, reject: (error: string) => void) => {
             const payload = this.tokenService.verifyAccessTokenIgnoreExpiry(accessToken)
             if (payload != null)
                 resolve(payload)
@@ -49,8 +53,8 @@ class LoginService {
         })
     }
 
-    _verifyRefreshToken(refreshToken) {
-        return new Promise((resolve, reject) => {
+    _verifyRefreshToken(refreshToken: string) {
+        return new Promise((resolve: (tokenPayload: JWTRefreshTokenPayload) => void, reject: (error: string) => void) => {
             const payload = this.tokenService.verifyRefreshToken(refreshToken)
             if (payload != null)
                 resolve(payload)
@@ -60,4 +64,4 @@ class LoginService {
     }
 }
 
-module.exports = LoginService
+export default LoginService

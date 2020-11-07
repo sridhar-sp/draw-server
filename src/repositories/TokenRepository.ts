@@ -17,4 +17,4 @@ class TokenRepository {
     }
 }
 
-module.exports = TokenRepository
+export default TokenRepository
