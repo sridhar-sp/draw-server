@@ -1,4 +1,4 @@
-const firebaseAdmin = require('../firebase/firebase.js')
+import firebaseAdmin from '../firebase/firebase'
 import ErrorResponse from '../models/ErrorResponse';
 
 const firebaseAuthMiddleware = function (req, res, next) {

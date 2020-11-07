@@ -1,4 +1,4 @@
-const firebaseAdmin = require('../firebase/firebase.js')
+import firebaseAdmin from '../firebase/firebase'
 import TokenService from '../services/TokenService'
 import { Socket } from 'socket.io'
 import JWTAccessTokenPayload from '../models/JWTAccessTokenPayload'
