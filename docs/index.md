@@ -8,4 +8,8 @@
 
 ### Human rocks flow
 
-![High level user interaction](sequence/game_flow_human_rocks.svg)
+![Game sequence(human rocks flow)](sequence/game_flow_human_rocks.svg)
+
+### Confused artist flow
+
+![Game sequence(confused artist flow)](sequence/game_flow_confused_artist.svg)

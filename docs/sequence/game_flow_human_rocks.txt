@@ -1,0 +1,54 @@
+Title : Game flow (human rocks)\nNo.of round is 1\nParticipant selecting drawing word before word selection timer elapses\nParticipant providing correct answer before drawing timer elapses
+
+participant Participant_1 as p1
+participant Server as server
+participant Participant_2 as p2
+participant DB as db
+participant Scheduler as scheduler
+p1 --> server : connect
+p2 --> server : connect
+p1 --> server : create game
+p2 --> server : join game
+p1 --> server : start game
+server -> db : update game records
+server -> db : assign roles
+server -> scheduler : schedule task to auto select drawing word (w1)
+#note right of scheduler : schedule task to\nforce select the word\nafter 'x' seconds
+server -> db : map & persist 'w1' task id with game id 
+server -> p1 : game ready
+server -> p2 : game ready
+p1 --> server : get game state
+p2 --> server : get game state
+server -> p1 : user role as 'drawer'
+server -> p2 : user role as 'viewer'
+p1 --> server : get list of words
+p1 --> server : select a word
+server -> db : map & persist selected word with game id
+server -> db : invalidate 'w1' task
+server -> p1 : start drawing
+server -> scheduler : schedule task to auto end current drawing session (d1)
+server -> p2 : hint about the word
+p2 --> server : answer
+server -> p2 : wrong answer
+p2 --> server : answer
+server -> p2 : correct answer
+server -> db : invalidate 'd1' task if all participant answered correctly
+server -> p1 : show score board
+server -> p2 : show score board
+server -> db : assign roles
+server -> scheduler : schedule task to auto select drawing word (w2)
+server -> db : map & persist 'w2' task id with game id 
+server -> p1 : user role as 'viewer'
+server -> p2 : user role as 'drawer'
+p2 --> server : get list of words
+p2 --> server : select a word
+server -> db : map & persist selected word with game id
+server -> db : invalidate 'w2' task
+server -> p2 : start drawing
+server -> scheduler : schedule task to auto end current drawing session (d2)
+server -> p1 : hint about the word
+p1 --> server : answer
+server -> p1 : correct answer
+server -> db : invalidate 'd2' task if all participant answered correctly
+server -> p1 : show final score board
+server -> p2 : show final score board
