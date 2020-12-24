@@ -28,6 +28,4 @@ This project is configured with the 'ts-node-dev'. If you make some changes and 
 
 Run `/api-docs` end point to get the full api documentation
 
-## High level user interaction
-
-![High level user interaction](docs/High_Level_User_Interaction.png)
+Usecase and sequence diagrams can be found [here](https://half-blood-prince.github.io/draw-server)
