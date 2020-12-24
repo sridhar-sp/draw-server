@@ -13,3 +13,7 @@
 ### Confused artist flow
 
 ![Game sequence(confused artist flow)](sequence/game_flow_confused_artist.svg)
+
+### Machine rocks flow
+
+![Game sequence(machine rocks flow)](sequence/game_flow_machine_rocks.svg)

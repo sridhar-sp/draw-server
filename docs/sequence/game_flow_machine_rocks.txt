@@ -1,4 +1,4 @@
-Title : Game flow (confused artist)\nNo.of round is 1\nParticipant failed to select the drawing word within the given time\nParticipant providing correct answer before drawing timer elapses
+Title : Game flow (machine rocks)\nNo.of round is 1\nParticipant failed to select the drawing word within the given time\nAll Participant failed to provide correct answer within the given time
 
 participant Participant_1 as p1
 participant Server as server
@@ -22,9 +22,8 @@ p2 --> server : get game state
 server -> p1 : user role as 'drawer'
 server -> p2 : user role as 'viewer'
 p1 --> server : get list of words
-note left of db : Participant didn't select any word
+note left of db : Particpant didn't select any word
 scheduler -> server : auto select a word (w1 task kicks-in)
-
 server -> db : map & persist selected word with game id
 server -> db : invalidate 'w1' task
 server -> p1 : start drawing
@@ -33,8 +32,10 @@ server -> p2 : hint about the word
 p2 --> server : answer
 server -> p2 : wrong answer
 p2 --> server : answer
-server -> p2 : correct answer
-server -> db : invalidate 'd1' task if all participant answered correctly
+server -> p2 : wrong answer
+note left of db :Didn't receive a correct answer from\nall participant (d1 task kicks-in)
+scheduler -> server : end current drawing session
+server -> db : invalidate 'd1' task
 server -> p1 : show score board
 server -> p2 : show score board
 server -> db : assign roles
@@ -43,14 +44,18 @@ server -> db : map & persist 'w2' task id with game id
 server -> p1 : user role as 'viewer'
 server -> p2 : user role as 'drawer'
 p2 --> server : get list of words
-p2 --> server : select a word
+note left of db : Particpant didn't select any word
+scheduler -> server : auto select a word (w2 task kicks-in)
+
 server -> db : map & persist selected word with game id
 server -> db : invalidate 'w2' task
 server -> p2 : start drawing
 server -> scheduler : schedule task to auto end current drawing session (d2)
 server -> p1 : hint about the word
 p1 --> server : answer
-server -> p1 : correct answer
-server -> db : invalidate 'd2' task if all participant answered correctly
+server -> p1 : wrong answer
+note left of db :Didn't receive a correct answer from\nall participant (d2 task kicks-in)
+scheduler -> server : end current drawing session
+server -> db : invalidate 'd2' task
 server -> p1 : show final score board
 server -> p2 : show final score board
