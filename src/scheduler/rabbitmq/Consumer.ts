@@ -3,12 +3,12 @@ import amqp, { Message } from "amqplib/callback_api";
 import logger from "../../logger/logger";
 
 class Consumer extends AMQBBase {
-  public static create(host: String, port: number): Consumer {
-    return new Consumer(host, port);
+  public static create(url: string): Consumer {
+    return new Consumer(url);
   }
 
-  private constructor(host: String, port: number) {
-    super(host, port);
+  private constructor(url: string) {
+    super(url);
   }
   public consume(queue: string, handler: (payload: string) => void) {
     this.assertQueue(queue, {}).then((_) => {

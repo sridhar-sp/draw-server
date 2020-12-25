@@ -2,14 +2,12 @@ import amqp, { Channel, Connection, Options, Replies, Message } from "amqplib/ca
 import logger from "../../logger/logger";
 
 class AMQPBase {
-  private host: String;
-  private port: number;
+  private url: string;
   protected channel: Channel | null;
   private connection: Connection | null;
 
-  constructor(host: String, port: number) {
-    this.host = host;
-    this.port = port;
+  constructor(url: string) {
+    this.url = url;
     this.channel = null;
     this.connection = null;
   }
@@ -20,8 +18,8 @@ class AMQPBase {
         resolve(this.connection);
         return;
       }
-      const url = `amqp://${this.host}:${this.port}`;
-      amqp.connect(url, (err: any, connection: Connection) => {
+
+      amqp.connect(this.url, (err: any, connection: Connection) => {
         if (err) {
           logger.error(err);
           reject(new Error(err));

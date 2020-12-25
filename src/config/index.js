@@ -15,6 +15,5 @@ module.exports = {
   },
   firebaseConfig: JSON.parse(process.env.FIREBASE_CONFIG),
   redisURL: process.env.REDIS_URL ? process.env.REDIS_URL : "",
-  rabbitMQHost: process.env.RABBIT_MQ_HOST ? process.env.RABBIT_MQ_HOST : "",
-  rabbitMQPort: process.env.RABBIT_MQ_PORT ? process.env.RABBIT_MQ_PORT : "0",
+  rabbitMQUrl: process.env.RABBIT_MQ_URL ? process.env.RABBIT_MQ_URL : "",
 };

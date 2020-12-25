@@ -13,15 +13,16 @@ class MessagingSystemDetails {
 }
 
 class Producer extends AMQBBase {
-  public static create(host: String, port: number): Producer {
-    return new Producer(host, port);
+  public static create(url: string): Producer {
+    return new Producer(url);
   }
 
-  private constructor(host: String, port: number) {
-    super(host, port);
+  private constructor(url: string) {
+    super(url);
   }
 
   public sendDelayedMessageToQueue(queueName: string, delayInMills: number, data: string): Promise<void> {
+    logger.log(`Initiate Send delayed message to queue at ${new Date().toTimeString()}`);
     return new Promise((resolve, reject) => {
       this.assertExchange(
         MessagingSystemDetails.INTERMEDIATE_EXCHANGE,
@@ -44,6 +45,7 @@ class Producer extends AMQBBase {
           this.channel?.sendToQueue(MessagingSystemDetails.INTERMEDIATE_QUEUE, Buffer.from(data), {
             expiration: delayInMills,
           });
+          logger.log(`Send message to queue at ${new Date().toTimeString()}`);
           resolve();
         })
         .catch((error: Error) => {

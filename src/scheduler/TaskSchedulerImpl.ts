@@ -10,7 +10,7 @@ class TaskSchedulerImpl implements TaskScheduler {
   private producer: Producer;
 
   public static create(taskRepository: TaskRepository): TaskScheduler {
-    return new TaskSchedulerImpl(taskRepository, Producer.create(config.rabbitMQHost, parseInt(config.rabbitMQPort)));
+    return new TaskSchedulerImpl(taskRepository, Producer.create(config.rabbitMQUrl));
   }
 
   private constructor(taskRepository: TaskRepository, producer: Producer) {

@@ -11,7 +11,7 @@ class TaskConsumerImpl implements TaskConsumer {
   private consumer: Consumer;
 
   public static create(taskRepository: TaskRepository): TaskConsumer {
-    return new TaskConsumerImpl(taskRepository, Consumer.create(config.rabbitMQHost, parseInt(config.rabbitMQPort)));
+    return new TaskConsumerImpl(taskRepository, Consumer.create(config.rabbitMQUrl));
   }
 
   private constructor(taskRepository: TaskRepository, consumer: Consumer) {
@@ -23,7 +23,7 @@ class TaskConsumerImpl implements TaskConsumer {
     this.consumer.consume(taskType.toString(), async (payload: string) => {
       const task = Task.fromJson(payload);
       const isTaskValid = await this.taskRepository.isTaskValid(task.taskId);
-      logger.log(`Time to execute ${taskType} isTaskValid=${isTaskValid}`);
+      logger.log(`Time to execute ${taskType} isTaskValid=${isTaskValid} received at ${new Date().toTimeString()}`);
       if (isTaskValid) {
         handler(task);
       }
