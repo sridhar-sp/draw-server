@@ -1,6 +1,6 @@
 import AMQBBase from "./amqpBase";
 import amqp, { Message } from "amqplib/callback_api";
-import logger from "../logger/logger";
+import logger from "../../logger/logger";
 
 class Consumer extends AMQBBase {
   public static create(host: String, port: number): Consumer {

@@ -1,7 +1,7 @@
 import { Replies, Message } from "amqplib/callback_api";
 
 import AMQBBase from "./amqpBase";
-import logger from "../logger/logger";
+import logger from "../../logger/logger";
 
 class MessagingSystemDetails {
   static INTERMEDIATE_EXCHANGE = "intermediate_exchange";

@@ -1,5 +1,5 @@
 import { json } from "express";
-import Producer from "../rabbitmq/Producer";
+import Producer from "./rabbitmq/Producer";
 import Task from "./Task";
 import TaskRepository from "./TaskRepository";
 import TaskScheduler from "./TaskScheduler";

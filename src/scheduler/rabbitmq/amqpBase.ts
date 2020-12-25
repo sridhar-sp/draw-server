@@ -1,5 +1,5 @@
 import amqp, { Channel, Connection, Options, Replies, Message } from "amqplib/callback_api";
-import logger from "../logger/logger";
+import logger from "../../logger/logger";
 
 class AMQPBase {
   private host: String;

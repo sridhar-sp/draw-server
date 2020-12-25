@@ -1,4 +1,4 @@
-import Consumer from "../rabbitmq/Consumer";
+import Consumer from "./rabbitmq/Consumer";
 import Task from "./Task";
 import TaskConsumer from "./TaskConsumer";
 import TaskRepository from "./TaskRepository";
