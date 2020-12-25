@@ -17,3 +17,7 @@
 ### Machine rocks flow
 
 ![Game sequence(machine rocks flow)](sequence/game_flow_machine_rocks.svg)
+
+## Task scheduler
+
+![Task scheduler](class_diagram/TaskScheduler.png)
