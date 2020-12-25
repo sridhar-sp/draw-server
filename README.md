@@ -1,5 +1,7 @@
 # Draw & Guess Game Server
 
+![CodeQL](https://github.com/half-blood-prince/draw-server/workflows/CodeQL/badge.svg?branch=master)
+
 A Backend server helps to create/join a drawing game.
 
 ---
