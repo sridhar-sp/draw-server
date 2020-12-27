@@ -40,6 +40,15 @@ class RedisHelper {
     });
   }
 
+  delete_(key: string): Promise<boolean> {
+    return new Promise((resolve, reject: (error: Error) => void) => {
+      this.redisClient.del(key, (err, reply) => {
+        if (err) reject(err);
+        else resolve(true);
+      });
+    });
+  }
+
   exist(key: string) {
     return new Promise((resolve: (isExist: boolean) => void, reject: (error: Error) => void) => {
       this.redisClient.exists(key, (err, reply) => {

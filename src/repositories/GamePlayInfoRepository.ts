@@ -1,51 +1,95 @@
-import redisHelper from '../redis/RedisHelper'
-import GamePlayInfo from '../models/GamePlayInfo'
-import Participant from '../models/Participant'
-import GamePlayStatus from '../models/GamePlayStatus'
-import logger from '../logger/logger'
+import { JsxEmit } from "typescript";
+import GamePlayInfo from "../models/GamePlayInfo";
+import GamePlayStatus from "../models/GamePlayStatus";
+import RedisHelper from "../redis/RedisHelperV2";
+import logger from "../logger/logger";
+import Participant from "../models/Participant";
 
 class GamePlayInfoRepository {
+  private redisHelper: RedisHelper;
 
-    async deleteGameInfo(gameKey: string) {
-        console.log(`deleteGameInfo for game ${gameKey}`)
-        return redisHelper.delete(gameKey)
-    }
+  public static create(redisHelper: RedisHelper): GamePlayInfoRepository {
+    return new GamePlayInfoRepository(redisHelper);
+  }
 
-    async addParticipant(gameKey: string, socketId: string) {
-        logger.log(`addParticipant ${socketId} for game ${gameKey}`)
-        const gameInfo = await this.getGameInfo(gameKey)
-        gameInfo.addParticipant(Participant.create(socketId))
-        await redisHelper.setString(gameKey, JSON.stringify(gameInfo))
-    }
+  private constructor(redisHelper: RedisHelper) {
+    this.redisHelper = redisHelper;
+  }
 
-    async removeParticipant(gameKey: string, socketId: string) {
-        logger.log(`remove ${socketId} for game ${gameKey}`)
-        const gameInfo = await this.getGameInfo(gameKey)
-        gameInfo.removeParticipant(socketId)
-        await redisHelper.setString(gameKey, JSON.stringify(gameInfo))
-    }
+  getGameInfo(gameKey: string): Promise<GamePlayInfo | null> {
+    return new Promise((resolve: (gamePlayInfo: GamePlayInfo | null) => void, reject) => {
+      this.redisHelper
+        .getString(gameKey)
+        .then(async (gamePlayInfoJson) => {
+          if (null == gamePlayInfoJson) resolve(null);
+          else resolve(GamePlayInfo.fromJson(gamePlayInfoJson));
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  }
 
-    async updateGameStatus(gameKey: string, gamePlayStatus: GamePlayStatus) {
-        logger.log(`updateGameStatus ${gamePlayStatus} for game ${gameKey}`)
-        const gameInfo = await this.getGameInfo(gameKey)
-        gameInfo.updateGamePlayStatus(gamePlayStatus)
-        return redisHelper.setString(gameKey, JSON.stringify(gameInfo))
-    }
-
-    async getGameInfo(gameKey: string) {
-        const gameInfo = await redisHelper.getString(gameKey)
-
-        if (gameInfo != null) {
-            try {
-                return GamePlayInfo.createCopy(JSON.parse(gameInfo))
-            } catch (err) {
-                logger.error("Error parsing game info " + err)
-            }
+  getOrCreateGameInfo(gameKey: string): Promise<GamePlayInfo> {
+    return new Promise(async (resolve: (gamePlayInfo: GamePlayInfo) => void, reject) => {
+      this.getGameInfo(gameKey).then(async (gamePlayInfo) => {
+        if (null != gamePlayInfo) {
+          resolve(gamePlayInfo);
+          return;
         }
+        const newGamePlayInfo = GamePlayInfo.create(gameKey);
+        await this.redisHelper.setString(gameKey, newGamePlayInfo.toJson());
+        resolve(newGamePlayInfo);
+      });
+    });
+  }
 
-        return GamePlayInfo.create(gameKey)
-    }
+  deleteGameInfo(gameKey: string): Promise<boolean> {
+    return this.redisHelper.delete_(gameKey);
+  }
 
+  addParticipant(gameKey: string, socketId: string): Promise<void> {
+    logger.log(`addParticipant ${socketId} for game ${gameKey}`);
+    return new Promise((resolve, reject) => {
+      this.getOrCreateGameInfo(gameKey)
+        .then((gamePlayInfo) => {
+          gamePlayInfo.addParticipant(Participant.create(socketId));
+          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
+        })
+        .then((_) => resolve())
+        .catch((err) => reject(err));
+    });
+  }
+
+  removeParticipant(gameKey: string, socketId: string): Promise<void> {
+    logger.log(`removeParticipant ${socketId} for game ${gameKey}`);
+    return new Promise((resolve, reject) => {
+      this.getGameInfo(gameKey)
+        .then((gamePlayInfo) => {
+          if (null == gamePlayInfo) throw new Error(`No game record found for keu: ${gameKey}`);
+
+          gamePlayInfo.removeParticipant(socketId);
+          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
+        })
+        .then((_) => resolve())
+        .catch((err) => reject(err));
+    });
+  }
+
+  updateGameStatus(gameKey: string, gamePlayStatus: GamePlayStatus): Promise<void> {
+    logger.log(`updateGameStatus ${gamePlayStatus} for game ${gameKey}`);
+    return new Promise((resolve, reject) => {
+      this.getGameInfo(gameKey)
+        .then((gamePlayInfo) => {
+          if (null == gamePlayInfo) throw new Error(`No game record found for keu: ${gameKey}`);
+
+          gamePlayInfo.updateGamePlayStatus(gamePlayStatus);
+          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
+        })
+        .then((_) => resolve())
+        .catch((err) => reject(err));
+    });
+  }
 }
 
-export default GamePlayInfoRepository
+export default GamePlayInfoRepository;

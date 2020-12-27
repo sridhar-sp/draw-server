@@ -24,20 +24,21 @@ class SocketIOServer {
   private roomEventHandlerService: RoomEventHandlerService;
 
   private taskScheduler: TaskScheduler;
-  private taskConsumer: TaskConsumer;
 
   constructor(httpServer: HttpServer | HttpsServer) {
     this.socketServer = socketIo(httpServer);
-    this.gameEventHandlerService = new GameEventHandlerService(this.socketServer);
-    this.roomEventHandlerService = new RoomEventHandlerService(this.socketServer);
 
     const taskRepository: TaskRepository = TaskRepositoryImpl.create(redisHelper);
     this.taskScheduler = TaskSchedulerImpl.create(taskRepository);
-    this.taskConsumer = TaskConsumerImpl.create(taskRepository);
 
-    this.taskConsumer.consume(TaskType.AUTO_SELECT_WORD, (task) => {
-      logger.log("***** Payload " + task.payload);
-    });
+    this.roomEventHandlerService = new RoomEventHandlerService(this.socketServer);
+    this.gameEventHandlerService = new GameEventHandlerService(this.socketServer, this.taskScheduler);
+
+    const autoSelectTaskConsumer = TaskConsumerImpl.create(taskRepository);
+    autoSelectTaskConsumer.consume(TaskType.AUTO_SELECT_WORD, this.onTimeToAutoSelectWord);
+
+    const endDrawingSessionTaskConsumer = TaskConsumerImpl.create(taskRepository);
+    endDrawingSessionTaskConsumer.consume(TaskType.END_DRAWING_SESSION, this.onTimeToEndDrawingSession);
   }
 
   static bind(httpServer: any) {
@@ -45,17 +46,25 @@ class SocketIOServer {
   }
 
   build() {
-    this._attachAuthMiddleware();
-    this._setup();
+    this.attachAuthMiddleware();
+    this.setup();
   }
 
-  private _attachAuthMiddleware() {
+  private attachAuthMiddleware() {
     this.socketServer.use(socketIOAuthMiddleware);
   }
 
-  private _setup() {
+  private onTimeToAutoSelectWord(task: Task) {
+    logger.log("***** onTimeToAutoSelectWord Payload " + task.payload);
+  }
+
+  private onTimeToEndDrawingSession(task: Task) {
+    logger.log("***** onTimeToEndDrawingSession Payload " + task.payload);
+  }
+
+  private setup() {
     this.socketServer.on("connection", (socket) => {
-      console.log(`Socket connected ${socket.id}
+      logger.log(`Socket connected ${socket.id}
             Gamekey = ${socket.handshake.query.gameKey} 
             name = ${socket.request.userRecord.displayName}`);
 
@@ -65,6 +74,11 @@ class SocketIOServer {
       });
 
       socket.on("disconnect", () => {
+        this.roomEventHandlerService.handleLeave(socket);
+        this.gameEventHandlerService.handleLeave(socket);
+      });
+
+      socket.on(SocketEvents.Game.LEAVE_GAME, () => {
         this.roomEventHandlerService.handleLeave(socket);
         this.gameEventHandlerService.handleLeave(socket);
       });
