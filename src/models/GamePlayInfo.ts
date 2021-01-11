@@ -49,44 +49,6 @@ class GamePlayInfo {
   public toJson(): string {
     return JSON.stringify(this);
   }
-
-  updateGamePlayStatus(gamePlayStatus: GamePlayStatus): void {
-    this.gamePlayStatus = gamePlayStatus;
-  }
-
-  addParticipant(participant: Participant): Participant {
-    const index = this.findParticipant(participant.socketId);
-
-    if (index != -1) {
-      logger.warn(`Participant record already available at index ${index}`);
-      return this.participants[index];
-    }
-
-    this.participants.push(participant);
-    logger.log(`Added participant ${participant.socketId}`);
-
-    return participant;
-  }
-
-  removeParticipant(socketId: string): Participant | null {
-    const index = this.findParticipant(socketId);
-
-    if (index == -1) {
-      logger.log(`No user record found for ${socketId}`);
-      return null;
-    }
-
-    const participantToRemove = this.participants[index];
-
-    this.participants.splice(index, 1);
-
-    return participantToRemove;
-  }
-
-  findParticipant(socketId: string): number {
-    if (!this.participants || this.participants.length == 0) return -1;
-    return this.participants.findIndex((participant) => participant.socketId == socketId);
-  }
 }
 
 export default GamePlayInfo;
