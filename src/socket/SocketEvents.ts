@@ -14,6 +14,11 @@ class Game {
   static REQUEST_GAME_SCREEN_STATE = "event:request_game_screen_state";
   static GAME_SCREEN_STATE_RESULT = "event:game_screen_state_result";
 
+  static REQUEST_LIST_OF_WORD = "request:list_of_words";
+  static LIST_OF_WORD_RESPONSE = "response:list_of_word";
+
+  static REQUEST_SELECT_WORD = "request:select_word";
+
   static DRAWING_EVENT = "event:drawing";
 
   static ANSWER_EVENT = "event:answer";

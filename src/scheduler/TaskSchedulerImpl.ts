@@ -6,6 +6,8 @@ import TaskScheduler from "./TaskScheduler";
 import config from "../config/";
 
 class TaskSchedulerImpl implements TaskScheduler {
+  private static TAG = "TaskSchedulerImpl";
+
   private taskRepository: TaskRepository;
   private producer: Producer;
 
@@ -18,8 +20,14 @@ class TaskSchedulerImpl implements TaskScheduler {
     this.producer = producer;
   }
 
-  scheduleTask(delayInMilliseconds: number, task: Task): Promise<void> {
-    return this.producer.sendDelayedMessageToQueue(task.taskType, delayInMilliseconds, task.toJson());
+  scheduleTask(delayInMilliseconds: number, task: Task): Promise<string> {
+    return new Promise((resolve: (taskId: string) => void, reject: (error: Error) => void) => {
+      this.taskRepository
+        .createTask(task.taskId, 25)
+        .then(() => this.producer.sendDelayedMessageToQueue(task.taskType, delayInMilliseconds, task.toJson()))
+        .then(() => resolve(task.taskId))
+        .catch((error) => reject(error));
+    });
   }
 
   invalidateTask(taskId: string): Promise<void> {

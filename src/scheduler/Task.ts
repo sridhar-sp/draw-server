@@ -4,19 +4,21 @@ import TaskType from "./TaskType";
 class Task {
   public taskId: string;
   public taskType: string;
+  public ttlInSeconds: number;
   public payload: string;
 
-  public static create(taskType: TaskType, payload: string) {
-    return new Task(v4(), taskType.toString(), payload);
+  public static create(taskType: TaskType, ttlInSeconds: number, payload: string) {
+    return new Task(v4(), taskType.toString(), ttlInSeconds, payload);
   }
 
   public static fromJson(json: string): Task {
     return JSON.parse(json) as Task;
   }
 
-  public constructor(taskId: string, taskType: string, payload: string) {
+  public constructor(taskId: string, taskType: string, ttlInSeconds: number, payload: string) {
     this.taskId = taskId;
     this.taskType = taskType;
+    this.ttlInSeconds = ttlInSeconds;
     this.payload = payload;
   }
 

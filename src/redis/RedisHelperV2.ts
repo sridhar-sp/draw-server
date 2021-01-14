@@ -49,11 +49,20 @@ class RedisHelper {
     });
   }
 
-  exist(key: string) {
+  exist(key: string): Promise<boolean> {
     return new Promise((resolve: (isExist: boolean) => void, reject: (error: Error) => void) => {
       this.redisClient.exists(key, (err, reply) => {
         if (err == null) resolve(reply == 1);
         else reject(err);
+      });
+    });
+  }
+
+  expire(key: string, ttlInSeconds: number): Promise<void> {
+    return new Promise((resolve: () => void, reject: (error: Error) => void) => {
+      this.redisClient.expire(key, ttlInSeconds, (err, reply) => {
+        if (err) reject(err);
+        else resolve();
       });
     });
   }

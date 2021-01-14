@@ -1,5 +1,5 @@
 interface TaskRepository {
-  createTask(taskId: string): Promise<void>;
+  createTask(taskId: string, ttlInSeconds: number): Promise<void>;
   deleteTask(taskId: string): Promise<void>;
   isTaskValid(taskId: string): Promise<boolean>;
 }

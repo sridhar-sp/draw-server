@@ -11,34 +11,29 @@ class TaskRepositoryImpl implements TaskRepository {
   private constructor(redisHelper: RedisHelper) {
     this.redisHelper = redisHelper;
   }
-  createTask(taskId: string): Promise<void> {
+  createTask(taskId: string, ttlInSeconds: number): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      try {
-        await this.redisHelper.setString(taskId, "");
-        resolve();
-      } catch (error) {
-        reject();
-      }
+      this.redisHelper
+        .setString(taskId, "")
+        .then(() => this.redisHelper.expire(taskId, ttlInSeconds))
+        .then(() => resolve())
+        .catch((error) => reject(error));
     });
   }
   deleteTask(taskId: string): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        await this.redisHelper.delete(taskId);
-        resolve();
-      } catch (error) {
-        reject();
-      }
+    return new Promise(async (resolve: () => void, reject: (error: Error) => void) => {
+      this.redisHelper
+        .delete(taskId)
+        .then(() => resolve())
+        .catch((error) => reject(error));
     });
   }
   isTaskValid(taskId: string): Promise<boolean> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const isExist = await this.redisHelper.exist(taskId);
-        resolve(isExist);
-      } catch (error) {
-        reject();
-      }
+    return new Promise(async (resolve: (isExist: boolean) => void, reject: (error: Error) => void) => {
+      this.redisHelper
+        .exist(taskId)
+        .then((isExist) => resolve(isExist))
+        .catch((error) => reject(error));
     });
   }
 }

@@ -31,3 +31,7 @@ This project is configured with the 'ts-node-dev'. If you make some changes and 
 Run `/api-docs` end point to get the full api documentation
 
 Usecase and sequence diagrams can be found [here](https://half-blood-prince.github.io/draw-server)
+
+## Credits
+
+The sequence diagrams are created using [js-sequence-diagrams](https://bramp.github.io/js-sequence-diagrams/)

@@ -9,12 +9,15 @@ class GamePlayInfo {
       copyObj.gamePlayStatus,
       copyObj.noOfRounds,
       copyObj.currentRound,
-      copyObj.participants
+      copyObj.currentDrawingParticipant,
+      copyObj.participants,
+      copyObj.autoSelectWordTaskId,
+      copyObj.endDrawingSessionTaskId
     );
   }
 
   static create(gameKey: string) {
-    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, []);
+    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, null, [], null, null);
   }
 
   public static fromJson(json: string): GamePlayInfo | null {
@@ -30,20 +33,29 @@ class GamePlayInfo {
   public gamePlayStatus: GamePlayStatus;
   public noOfRounds: number;
   public currentRound: number;
+  public currentDrawingParticipant: Participant | null;
   public participants: Participant[];
+  public autoSelectWordTaskId: string | null;
+  public endDrawingSessionTaskId: string | null;
 
   constructor(
     gameKey: string,
     gamePlayStatus: GamePlayStatus,
     noOfRounds: number,
     currentRound: number,
-    participants: Participant[]
+    currentDrawingParticipant: Participant | null,
+    participants: Participant[],
+    autoSelectWordTaskId: string | null,
+    endDrawingSessionTaskId: string | null
   ) {
     this.gameKey = gameKey;
     this.gamePlayStatus = gamePlayStatus;
     this.noOfRounds = noOfRounds;
     this.currentRound = currentRound;
+    this.currentDrawingParticipant = currentDrawingParticipant;
     this.participants = participants == null ? [] : participants;
+    this.autoSelectWordTaskId = autoSelectWordTaskId;
+    this.endDrawingSessionTaskId = endDrawingSessionTaskId;
   }
 
   public toJson(): string {
@@ -86,6 +98,24 @@ class GamePlayInfo {
   findParticipant(socketId: string): number {
     if (!this.participants || this.participants.length == 0) return -1;
     return this.participants.findIndex((participant) => participant.socketId == socketId);
+  }
+
+  findNextParticipant(currentPlayerSocketId: string): number {
+    if (!this.participants || this.participants.length == 0) return -1;
+
+    const currentPlayerIndex = this.participants.findIndex(
+      (participant) => participant.socketId == currentPlayerSocketId
+    );
+
+    return (currentPlayerIndex + 1) % this.participants.length;
+  }
+
+  setAutoSelectWordTaskId(taskId: string) {
+    this.autoSelectWordTaskId = taskId;
+  }
+
+  setEndDrawingSessionTaskId(taskId: string) {
+    this.endDrawingSessionTaskId = taskId;
   }
 }
 

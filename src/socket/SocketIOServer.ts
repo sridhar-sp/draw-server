@@ -18,7 +18,15 @@ import TaskType from "../scheduler/TaskType";
 import logger from "../logger/logger";
 import Task from "../scheduler/Task";
 
+import SuccessResponse from "../models/SuccessResponse";
+import AutoSelectWordTaskRequest from "../models/AutoSelectWordTaskRequest";
+import GameScreen from "../models/GameScreen";
+import GameScreenStatePayload from "../models/GameScreenStatePayload";
+import DrawGameScreenStateData from "../models/DrawGameScreenStateData";
+
 class SocketIOServer {
+  private static TAG = "SocketIOServer";
+
   private socketServer: SocketIO.Server;
   private gameEventHandlerService: GameEventHandlerService;
   private roomEventHandlerService: RoomEventHandlerService;
@@ -35,7 +43,7 @@ class SocketIOServer {
     this.gameEventHandlerService = new GameEventHandlerService(this.socketServer, this.taskScheduler);
 
     const autoSelectTaskConsumer = TaskConsumerImpl.create(taskRepository);
-    autoSelectTaskConsumer.consume(TaskType.AUTO_SELECT_WORD, this.onTimeToAutoSelectWord);
+    autoSelectTaskConsumer.consume(TaskType.AUTO_SELECT_WORD, this.onTimeToAutoSelectWord.bind(this));
 
     const endDrawingSessionTaskConsumer = TaskConsumerImpl.create(taskRepository);
     endDrawingSessionTaskConsumer.consume(TaskType.END_DRAWING_SESSION, this.onTimeToEndDrawingSession);
@@ -56,6 +64,17 @@ class SocketIOServer {
 
   private onTimeToAutoSelectWord(task: Task) {
     logger.log("***** onTimeToAutoSelectWord Payload " + task.payload);
+
+    const request = AutoSelectWordTaskRequest.fromJson(task.payload);
+    const socketWhoIsYetToSelectTheWord = this.socketServer.sockets.sockets[request.socketId];
+
+    //Map and persist some word
+    socketWhoIsYetToSelectTheWord.emit(
+      SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
+      SuccessResponse.createSuccessResponse(
+        GameScreenStatePayload.create(GameScreen.State.DRAW, DrawGameScreenStateData.create(request.word).toJson())
+      )
+    );
   }
 
   private onTimeToEndDrawingSession(task: Task) {
@@ -88,12 +107,19 @@ class SocketIOServer {
       });
 
       socket.on(SocketEvents.Game.REQUEST_START_GAME, async (data) => {
-        this.gameEventHandlerService.handleStartGame(socket);
-        this.taskScheduler.scheduleTask(2000, Task.create(TaskType.AUTO_SELECT_WORD, "hye man"));
+        await this.gameEventHandlerService.handleStartGame(socket);
       });
 
-      socket.on(SocketEvents.Game.REQUEST_GAME_SCREEN_STATE, (data) => {
-        this.gameEventHandlerService.handleGameScreenState(socket);
+      socket.on(SocketEvents.Game.REQUEST_GAME_SCREEN_STATE, async (data) => {
+        await this.gameEventHandlerService.handleGameScreenState(socket);
+      });
+
+      socket.on(SocketEvents.Game.REQUEST_LIST_OF_WORD, (data) => {
+        this.gameEventHandlerService.handleFetchWordList(socket);
+      });
+
+      socket.on(SocketEvents.Game.REQUEST_SELECT_WORD, (data) => {
+        this.gameEventHandlerService.handleSelectWord(socket, data);
       });
 
       socket.on(SocketEvents.Game.DRAWING_EVENT, (data) => {
