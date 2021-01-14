@@ -82,7 +82,7 @@ class GameEventHandlerService {
           AutoSelectWordTaskRequest.create(
             this.getGameKeyFromSocket(socket),
             socket.id,
-            DrawGameScreenStateData.create("Sridhar").toJson()
+            "Sridhar selected as default"
           ).toJson()
         )
       )
