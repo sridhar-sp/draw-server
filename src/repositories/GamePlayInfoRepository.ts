@@ -57,6 +57,7 @@ class GamePlayInfoRepository {
     return new Promise((resolve, reject) => {
       this.getOrCreateGameInfo(gameKey)
         .then((gamePlayInfo) => {
+          //To-do based on game play status, decide which state to assign to the participant
           gamePlayInfo.addParticipant(Participant.create(socketId));
           return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
         })
@@ -70,7 +71,7 @@ class GamePlayInfoRepository {
     return new Promise((resolve, reject) => {
       this.getGameInfo(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`No game record found for keu: ${gameKey}`);
+          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
 
           gamePlayInfo.removeParticipant(socketId);
           return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
@@ -81,13 +82,28 @@ class GamePlayInfoRepository {
   }
 
   updateGameStatus(gameKey: string, gamePlayStatus: GamePlayStatus): Promise<void> {
-    logger.log(`updateGameStatus ${gamePlayStatus} for game ${gameKey}`);
+    logger.logInfo(GamePlayInfoRepository.TAG, `updateGameStatus ${gamePlayStatus} for game ${gameKey}`);
     return new Promise((resolve, reject) => {
       this.getGameInfo(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`No game record found for keu: ${gameKey}`);
+          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
 
           gamePlayInfo.updateGamePlayStatus(gamePlayStatus);
+          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
+        })
+        .then((_) => resolve())
+        .catch((err) => reject(err));
+    });
+  }
+
+  updateSelectedWord(gameKey: string, word: string): Promise<void> {
+    logger.logInfo(GamePlayInfoRepository.TAG, `updateSelectedWord ${word} for game ${gameKey}`);
+    return new Promise((resolve, reject) => {
+      this.getGameInfo(gameKey)
+        .then((gamePlayInfo) => {
+          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
+
+          gamePlayInfo.word = word;
           return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
         })
         .then((_) => resolve())
@@ -100,7 +116,7 @@ class GamePlayInfoRepository {
     return new Promise((resolve, reject) => {
       this.getGameInfo(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`No game record found for keu: ${gameKey}`);
+          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
 
           if (taskType == TaskType.AUTO_SELECT_WORD) gamePlayInfo.setAutoSelectWordTaskId(taskId);
           else if (taskType == TaskType.END_DRAWING_SESSION) gamePlayInfo.setEndDrawingSessionTaskId(taskId);
@@ -116,7 +132,7 @@ class GamePlayInfoRepository {
     return new Promise((resolve: (taskId: string | null) => void, reject: (error: Error) => void) => {
       this.getGameInfo(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`getTaskId :: No game record found for keu: ${gameKey}`);
+          if (null == gamePlayInfo) throw new Error(`getTaskId :: No game record found for key: ${gameKey}`);
 
           if (taskType == TaskType.AUTO_SELECT_WORD) {
             return gamePlayInfo.autoSelectWordTaskId;
@@ -143,7 +159,7 @@ class GamePlayInfoRepository {
           if (gamePlayInfo.currentDrawingParticipant == null) {
             nextDrawingParticipantPos = 0;
           } else {
-            nextDrawingParticipantPos = gamePlayInfo.findNextParticipant(
+            nextDrawingParticipantPos = gamePlayInfo.findNextParticipantIndex(
               gamePlayInfo.currentDrawingParticipant.socketId
             );
             if (nextDrawingParticipantPos == 0) {
@@ -156,7 +172,7 @@ class GamePlayInfoRepository {
           gamePlayInfo.participants.forEach((participant) => {
             if (participant.socketId == nextDrawingParticipant.socketId)
               participant.gameScreenState = GameScreen.State.SELECT_DRAWING_WORD;
-            else participant.gameScreenState = GameScreen.State.VIEW;
+            else participant.gameScreenState = GameScreen.State.WAIT_FOR_DRAWING_WORD;
             logger.logInfo(
               GamePlayInfoRepository.TAG,
               `Assigning ${participant.socketId} with ${participant.gameScreenState}`
@@ -180,17 +196,17 @@ class GamePlayInfoRepository {
           if (null == gamePlayInfo) {
             logger.logInfo(
               GamePlayInfoRepository.TAG,
-              `Executing getGameScreenState, no game record found for ${gameKey} hence returning VIEW as default`
+              `Executing getGameScreenState, no game record found for ${gameKey} hence returning NONE as default`
             );
-            resolve(GameScreen.State.VIEW);
+            resolve(GameScreen.State.NONE);
           } else {
-            const participantIndex: number = gamePlayInfo.findParticipant(socketId);
+            const participantIndex: number = gamePlayInfo.findParticipantIndex(socketId);
             if (participantIndex == -1) {
               logger.logInfo(
                 GamePlayInfoRepository.TAG,
-                `Executing getGameScreenState, no participant record found for ${socketId} hence returning VIEW as default`
+                `Executing getGameScreenState, no participant record found for ${socketId} hence returning NONE as default`
               );
-              resolve(GameScreen.State.VIEW);
+              resolve(GameScreen.State.NONE);
               return;
             }
             resolve(gamePlayInfo.participants[participantIndex].gameScreenState);

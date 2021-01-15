@@ -1,7 +1,9 @@
+import SimpleUserRecord from "./SimpleUserRecord";
+
 class DrawGameScreenStateData {
   public word: string;
 
-  static create(word: string) {
+  static create(word: string): DrawGameScreenStateData {
     return new DrawGameScreenStateData(word);
   }
 

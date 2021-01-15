@@ -1,6 +1,7 @@
 import logger from "../logger/logger";
 import Participant from "./Participant";
 import GamePlayStatus from "./GamePlayStatus";
+import GameScreen from "./GameScreen";
 
 class GamePlayInfo {
   static createCopy(copyObj: GamePlayInfo): GamePlayInfo {
@@ -12,12 +13,13 @@ class GamePlayInfo {
       copyObj.currentDrawingParticipant,
       copyObj.participants,
       copyObj.autoSelectWordTaskId,
-      copyObj.endDrawingSessionTaskId
+      copyObj.endDrawingSessionTaskId,
+      copyObj.word
     );
   }
 
   static create(gameKey: string) {
-    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, null, [], null, null);
+    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, null, [], null, null, null);
   }
 
   public static fromJson(json: string): GamePlayInfo | null {
@@ -37,6 +39,7 @@ class GamePlayInfo {
   public participants: Participant[];
   public autoSelectWordTaskId: string | null;
   public endDrawingSessionTaskId: string | null;
+  public word: string | null;
 
   constructor(
     gameKey: string,
@@ -46,7 +49,8 @@ class GamePlayInfo {
     currentDrawingParticipant: Participant | null,
     participants: Participant[],
     autoSelectWordTaskId: string | null,
-    endDrawingSessionTaskId: string | null
+    endDrawingSessionTaskId: string | null,
+    word: string | null
   ) {
     this.gameKey = gameKey;
     this.gamePlayStatus = gamePlayStatus;
@@ -56,6 +60,7 @@ class GamePlayInfo {
     this.participants = participants == null ? [] : participants;
     this.autoSelectWordTaskId = autoSelectWordTaskId;
     this.endDrawingSessionTaskId = endDrawingSessionTaskId;
+    this.word = word;
   }
 
   public toJson(): string {
@@ -67,7 +72,7 @@ class GamePlayInfo {
   }
 
   addParticipant(participant: Participant): Participant {
-    const index = this.findParticipant(participant.socketId);
+    const index = this.findParticipantIndex(participant.socketId);
 
     if (index != -1) {
       logger.warn(`Participant record already available at index ${index}`);
@@ -81,7 +86,7 @@ class GamePlayInfo {
   }
 
   removeParticipant(socketId: string): Participant | null {
-    const index = this.findParticipant(socketId);
+    const index = this.findParticipantIndex(socketId);
 
     if (index == -1) {
       logger.log(`No user record found for ${socketId}`);
@@ -95,12 +100,18 @@ class GamePlayInfo {
     return participantToRemove;
   }
 
-  findParticipant(socketId: string): number {
+  findParticipant(socketId: string): Participant | null {
+    const index = this.findParticipantIndex(socketId);
+    if (index == -1) return null;
+    return this.participants[index];
+  }
+
+  findParticipantIndex(socketId: string): number {
     if (!this.participants || this.participants.length == 0) return -1;
     return this.participants.findIndex((participant) => participant.socketId == socketId);
   }
 
-  findNextParticipant(currentPlayerSocketId: string): number {
+  findNextParticipantIndex(currentPlayerSocketId: string): number {
     if (!this.participants || this.participants.length == 0) return -1;
 
     const currentPlayerIndex = this.participants.findIndex(
@@ -108,6 +119,16 @@ class GamePlayInfo {
     );
 
     return (currentPlayerIndex + 1) % this.participants.length;
+  }
+
+  findDrawingParticipant(): Participant | null {
+    if (!this.participants || this.participants.length == 0) return null;
+
+    for (let index = 0; index < this.participants.length; index++) {
+      const participant = this.participants[index];
+      if (participant.gameScreenState == GameScreen.State.SELECT_DRAWING_WORD) return participant;
+    }
+    return null;
   }
 
   setAutoSelectWordTaskId(taskId: string) {

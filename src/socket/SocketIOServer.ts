@@ -63,18 +63,18 @@ class SocketIOServer {
   }
 
   private onTimeToAutoSelectWord(task: Task) {
-    logger.log("***** onTimeToAutoSelectWord Payload " + task.payload);
-
     const request = AutoSelectWordTaskRequest.fromJson(task.payload);
-    const socketWhoIsYetToSelectTheWord = this.socketServer.sockets.sockets[request.socketId];
+    logger.logInfo(SocketIOServer.TAG, `onTimeToAutoSelectWord ${request.word}`);
 
-    //Map and persist some word
-    socketWhoIsYetToSelectTheWord.emit(
-      SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
-      SuccessResponse.createSuccessResponse(
-        GameScreenStatePayload.create(GameScreen.State.DRAW, DrawGameScreenStateData.create(request.word).toJson())
-      )
-    );
+    const socketWhoIsYetToSelectTheWord = this.socketServer.sockets.sockets[request.socketId];
+    if (socketWhoIsYetToSelectTheWord == null) {
+      logger.logError(
+        SocketIOServer.TAG,
+        "onTimeToAutoSelectWord socket becomes a ghost, can't proceed with the task execution"
+      );
+      return;
+    }
+    this.gameEventHandlerService.handleSelectWord(socketWhoIsYetToSelectTheWord, request.word);
   }
 
   private onTimeToEndDrawingSession(task: Task) {

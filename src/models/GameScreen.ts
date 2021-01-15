@@ -1,8 +1,11 @@
 class GameScreen {
   static State = Object.freeze({
+    NONE: 0,
     SELECT_DRAWING_WORD: 1,
-    DRAW: 2,
-    VIEW: 3,
+    WAIT_FOR_DRAWING_WORD: 2,
+    DRAW: 3,
+    VIEW: 4,
+    LEADER_BOARD: 5,
   });
 }
 
