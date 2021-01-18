@@ -126,8 +126,8 @@ class SocketIOServer {
         this.gameEventHandlerService.handleDrawingEvent(socket, data);
       });
 
-      socket.on(SocketEvents.Game.ANSWER_EVENT, (data) => {
-        console.log(`Answer ${data}`);
+      socket.on(SocketEvents.Game.ANSWER_REQUEST, (data) => {
+        this.gameEventHandlerService.handleAnswerEvent(socket, data);
       });
     });
   }

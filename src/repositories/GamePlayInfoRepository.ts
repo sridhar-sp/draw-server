@@ -147,6 +147,22 @@ class GamePlayInfoRepository {
     });
   }
 
+  getSelectedWord(gameKey: string): Promise<string> {
+    return new Promise((resolve: (word: string) => void, reject: (error: Error) => void) => {
+      this.getGameInfo(gameKey)
+        .then((gamePlayInfo) => {
+          if (null == gamePlayInfo) throw new Error(`getSelectedWord :: No game record found for key: ${gameKey}`);
+
+          if (gamePlayInfo.word == null || gamePlayInfo.word.trim() == "")
+            throw new Error(`getSelectedWord :: No word data found in game play record for key: ${gameKey}`);
+
+          return gamePlayInfo.word;
+        })
+        .then((word) => resolve(word))
+        .catch((error) => reject(error));
+    });
+  }
+
   assignRoles(gameKey: string): Promise<void> {
     logger.log(`assignRoles for game ${gameKey}`);
     return new Promise((resolve, reject) => {

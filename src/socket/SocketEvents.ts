@@ -21,7 +21,8 @@ class Game {
 
   static DRAWING_EVENT = "event:drawing";
 
-  static ANSWER_EVENT = "event:answer";
+  static ANSWER_REQUEST = "request:answer";
+  static ANSWER_RESPONSE = "response:answer";
 }
 
 export default { Room, Game };

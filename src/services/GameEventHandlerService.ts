@@ -39,31 +39,28 @@ class GameEventHandlerService {
   }
 
   async handleJoin(socket: Socket) {
-    await this.gamePlayInfoRepository.addParticipant(this.getGameKeyFromSocket(socket), socket.id);
+    await this.gamePlayInfoRepository.addParticipant(socket.getGameKey(), socket.id);
   }
 
   async handleLeave(socket: Socket) {
     try {
-      await this.gamePlayInfoRepository.removeParticipant(this.getGameKeyFromSocket(socket), socket.id);
+      await this.gamePlayInfoRepository.removeParticipant(socket.getGameKey(), socket.id);
     } catch (err) {
       logger.log(`Caught error ${err}}`);
     }
   }
 
   async handleStartGame(socket: Socket) {
-    const gameKey = this.getGameKeyFromSocket(socket);
-    await this.gamePlayInfoRepository.updateGameStatus(gameKey, GamePlayStatus.STARTED);
+    const gameKey = socket.getGameKey();
     await this.gamePlayInfoRepository.assignRoles(gameKey);
+    await this.gamePlayInfoRepository.updateGameStatus(gameKey, GamePlayStatus.STARTED);
 
-    //Temp code
-    // this.taskScheduler.scheduleTask(5000, Task.create(TaskType.AUTO_SELECT_WORD, gameKey));
-    //Temp code
     console.log("SocketEvents.GAME.START_GAME " + SocketEvents.Game.START_GAME);
-    this.socketServer.in(this.getGameKeyFromSocket(socket)).emit(SocketEvents.Game.START_GAME);
+    this.socketServer.in(socket.getGameKey()).emit(SocketEvents.Game.START_GAME);
   }
 
   async handleGameScreenState(socket: Socket) {
-    const gameKey = this.getGameKeyFromSocket(socket);
+    const gameKey = socket.getGameKey();
 
     this.gamePlayInfoRepository
       .getGameInfo(gameKey)
@@ -111,7 +108,7 @@ class GameEventHandlerService {
   }
 
   async handleFetchWordList(socket: Socket) {
-    const gameKey = this.getGameKeyFromSocket(socket);
+    const gameKey = socket.getGameKey();
     logger.logInfo(GameEventHandlerService.TAG, `REQUEST_LIST_OF_WORD for game = ${gameKey}`);
     const questions = this.questionRepository.getRandomQuestions(5);
     this.taskScheduler
@@ -120,7 +117,7 @@ class GameEventHandlerService {
         Task.create(
           TaskType.AUTO_SELECT_WORD,
           GameEventHandlerService.AUTO_SELECT_DRAWING_WORD_TTL_IN_SECONDS,
-          AutoSelectWordTaskRequest.create(this.getGameKeyFromSocket(socket), socket.id, questions[0]).toJson()
+          AutoSelectWordTaskRequest.create(socket.getGameKey(), socket.id, questions[0]).toJson()
         )
       )
       .then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.AUTO_SELECT_WORD, taskId))
@@ -131,7 +128,7 @@ class GameEventHandlerService {
   }
 
   async handleSelectWord(fromSocket: Socket, word: string) {
-    const gameKey = this.getGameKeyFromSocket(fromSocket);
+    const gameKey = fromSocket.getGameKey();
     logger.logInfo(GameEventHandlerService.TAG, `handleSelectWord game = ${gameKey} data = ${word}`);
 
     this.gamePlayInfoRepository
@@ -184,17 +181,29 @@ class GameEventHandlerService {
         `Assigning ${participant.socketId} with ${participant.gameScreenState}`
       );
     });
-    //Temp code
-    // this.taskScheduler.scheduleTask(5000, Task.create(TaskType.AUTO_SELECT_WORD, gameKey));
-    //Temp code
   }
 
   handleDrawingEvent(socket: Socket, data: Array<any>) {
-    socket.to(this.getGameKeyFromSocket(socket)).emit(SocketEvents.Game.DRAWING_EVENT, data);
+    socket.to(socket.getGameKey()).emit(SocketEvents.Game.DRAWING_EVENT, data);
   }
 
-  private getGameKeyFromSocket(socket: Socket): string {
-    return socket.handshake.query.gameKey;
+  handleAnswerEvent(socket: Socket, answer: string) {
+    logger.logInfo(
+      GameEventHandlerService.TAG,
+      `handleAnswerEvent from socket '${socket.getLoggingMeta()}' data = '${answer}'`
+    );
+    this.gamePlayInfoRepository
+      .getSelectedWord(socket.getGameKey())
+      .then((word) => {
+        logger.logInfo(GameEventHandlerService.TAG, `Word = '${word} :: answer'${answer}`);
+        socket.emit(
+          SocketEvents.Game.ANSWER_RESPONSE,
+          SuccessResponse.createSuccessResponse(answer.toLowerCase() == word.toLowerCase())
+        );
+      })
+      .catch((error) => {
+        logger.logError(GameEventHandlerService.TAG, error);
+      });
   }
 }
 
