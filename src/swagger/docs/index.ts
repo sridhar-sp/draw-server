@@ -1,5 +1,6 @@
 import config from "../../config";
 import tokenAPI from "./token.swagger";
+import gameAPI from "./game.swagger";
 
 const swaggerDocument = {
   openapi: "3.0.0",
@@ -27,6 +28,7 @@ const swaggerDocument = {
   components: {
     schemas: {
       ...tokenAPI.tokenDefinition,
+      ...gameAPI.gameAPIDefinition,
     },
     securitySchemes: {
       bearerAuth: {
@@ -44,9 +46,11 @@ const swaggerDocument = {
   tags: [{ name: "HTTP" }, { name: "SOCKET" }],
   paths: {
     ...tokenAPI.tokenPath,
+    ...gameAPI.gameAPIPath,
   },
   definitions: {
     ...tokenAPI.tokenDefinition,
+    ...gameAPI.gameAPIDefinition,
   },
 };
 
