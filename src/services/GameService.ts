@@ -5,8 +5,11 @@ import SuccessResponse from "../models/SuccessResponse";
 import ErrorResponse from "../models/ErrorResponse";
 import CreateGameResponse from "../models/CreateGameResponse";
 import CreateGameRequest from "../models/CreateGameRequest";
+import cryptoRandomString from "crypto-random-string";
 
 class GameService {
+  private static GAME_KEY_LENGTH = 10;
+
   private gamePlayInfoRepository: GamePlayInfoRepository;
 
   constructor() {
@@ -14,7 +17,9 @@ class GameService {
   }
 
   createGame(gameCreateRequest: CreateGameRequest): BaseResponse {
-    return SuccessResponse.createSuccessResponse(CreateGameResponse.create("gameKey"));
+    return SuccessResponse.createSuccessResponse(
+      CreateGameResponse.create(cryptoRandomString({ length: GameService.GAME_KEY_LENGTH }))
+    )
   }
 }
 
