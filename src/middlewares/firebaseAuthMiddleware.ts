@@ -10,7 +10,7 @@ const firebaseAuthMiddleware = function (req: any, res: Response, next: NextFunc
             req.uid = uid;
             next()
         }).catch(function (error) {
-            res.status(422).json(ErrorResponse.unAuthorised())
+            res.status(422).json(ErrorResponse.unAuthorized())
         });
 }
 

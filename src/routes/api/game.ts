@@ -8,10 +8,10 @@ const TAG = "GameRoute";
 const router = express.Router();
 const gameService = new GameService();
 
-router.post("/createGame", validateRequest, (req: express.Request, res: express.Response) => {
+router.post("/createGame", validateRequest, async (req: express.Request, res: express.Response) => {
   logger.logInfo(TAG, `createGame called`);
   const request = CreateGameRequest.create(req.body.noOfRounds, req.body.maxDrawingTime, req.body.maxWordSelectionTime);
-  const response = gameService.createGame(request);
+  const response = await gameService.createGame(request);
   res.status(response.code).send(response);
 });
 

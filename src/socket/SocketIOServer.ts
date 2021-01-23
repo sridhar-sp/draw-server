@@ -1,6 +1,7 @@
 import "./Extension";
 import SocketEvents from "./SocketEvents";
 import socketIOAuthMiddleware from "../middlewares/socketAccessTokenAuthMiddleware";
+import gameKeyVerifierSocketMiddleware from "../middlewares/gameKeyVerifierSocketMiddleware"
 import RoomEventHandlerService from "../services/RoomEventHandlerService";
 import GameEventHandlerService from "../services/GameEventHandlerService";
 
@@ -54,12 +55,13 @@ class SocketIOServer {
   }
 
   build() {
-    this.attachAuthMiddleware();
+    this.attachMiddleware();
     this.setup();
   }
 
-  private attachAuthMiddleware() {
+  private attachMiddleware() {
     this.socketServer.use(socketIOAuthMiddleware);
+    this.socketServer.use(gameKeyVerifierSocketMiddleware)
   }
 
   private onTimeToAutoSelectWord(task: Task) {

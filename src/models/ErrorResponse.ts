@@ -1,3 +1,4 @@
+import { json } from 'body-parser'
 import BaseResponse from './BaseResponse'
 
 class Error extends BaseResponse {
@@ -6,8 +7,12 @@ class Error extends BaseResponse {
         return new Error(code, message)
     }
 
-    static unAuthorised() {
+    static unAuthorized() {
         return Error.createErrorResponse(401, "Unauthorized")
+    }
+
+    toJson() {
+        return JSON.stringify(this)
     }
 }
 

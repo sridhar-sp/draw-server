@@ -20,6 +20,16 @@ class GamePlayInfoRepository {
     this.redisHelper = redisHelper;
   }
 
+  createGameInfo(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number): Promise<GamePlayInfo> {
+    return new Promise((resolve: (gamePlayInfo: GamePlayInfo) => void, reject) => {
+      const gamePlayInfo = GamePlayInfo.create(gameKey, noOfRounds, maxWordSelectionTime, maxDrawingTime)
+      this.redisHelper
+        .setString(gameKey, gamePlayInfo.toJson())
+        .then(_ => resolve(gamePlayInfo))
+        .catch(error => reject(error))
+    })
+  }
+
   getGameInfo(gameKey: string): Promise<GamePlayInfo | null> {
     return new Promise((resolve: (gamePlayInfo: GamePlayInfo | null) => void, reject) => {
       this.redisHelper
@@ -28,25 +38,10 @@ class GamePlayInfoRepository {
           if (null == gamePlayInfoJson) resolve(null);
           else resolve(GamePlayInfo.fromJson(gamePlayInfoJson));
         })
-        .catch((err) => {
-          reject(err);
-        });
+        .catch(err => reject(err));
     });
   }
 
-  getOrCreateGameInfo(gameKey: string): Promise<GamePlayInfo> {
-    return new Promise(async (resolve: (gamePlayInfo: GamePlayInfo) => void, reject) => {
-      this.getGameInfo(gameKey).then(async (gamePlayInfo) => {
-        if (null != gamePlayInfo) {
-          resolve(gamePlayInfo);
-          return;
-        }
-        const newGamePlayInfo = GamePlayInfo.create(gameKey);
-        await this.redisHelper.setString(gameKey, newGamePlayInfo.toJson());
-        resolve(newGamePlayInfo);
-      });
-    });
-  }
 
   deleteGameInfo(gameKey: string): Promise<boolean> {
     return this.redisHelper.delete_(gameKey);
@@ -55,14 +50,16 @@ class GamePlayInfoRepository {
   addParticipant(gameKey: string, socketId: string): Promise<void> {
     logger.log(`addParticipant ${socketId} for game ${gameKey}`);
     return new Promise((resolve, reject) => {
-      this.getOrCreateGameInfo(gameKey)
+      this.getGameInfo(gameKey)
         .then((gamePlayInfo) => {
+          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
+
           //To-do based on game play status, decide which state to assign to the participant
           gamePlayInfo.addParticipant(Participant.create(socketId));
           return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
         })
-        .then((_) => resolve())
-        .catch((err) => reject(err));
+        .then(_ => resolve())
+        .catch(err => reject(err));
     });
   }
 

@@ -41,7 +41,7 @@ class LoginService {
       .then((refreshToken) => this._verifyRefreshToken(refreshToken!))
       .then((refreshTokenPayload) => this.tokenService.generateAccessToken(refreshTokenPayload.userId))
       .then((accessToken) => SuccessResponse.createSuccessResponse(TokenResponse.create(accessToken)))
-      .catch((error) => ErrorResponse.unAuthorised());
+      .catch((error) => ErrorResponse.unAuthorized());
   }
 
   _verifyAccessTokenIgnoreExpiry(accessToken: string) {

@@ -10,6 +10,8 @@ class GamePlayInfo {
       copyObj.gamePlayStatus,
       copyObj.noOfRounds,
       copyObj.currentRound,
+      copyObj.maxWordSelectionTime,
+      copyObj.maxDrawingTime,
       copyObj.currentDrawingParticipant,
       copyObj.participants,
       copyObj.autoSelectWordTaskId,
@@ -18,8 +20,8 @@ class GamePlayInfo {
     );
   }
 
-  static create(gameKey: string) {
-    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, null, [], null, null, null);
+  static create(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number) {
+    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null);
   }
 
   public static fromJson(json: string): GamePlayInfo | null {
@@ -35,6 +37,8 @@ class GamePlayInfo {
   public gamePlayStatus: GamePlayStatus;
   public noOfRounds: number;
   public currentRound: number;
+  public maxWordSelectionTime: number
+  public maxDrawingTime: number
   public currentDrawingParticipant: Participant | null;
   public participants: Participant[];
   public autoSelectWordTaskId: string | null;
@@ -46,6 +50,8 @@ class GamePlayInfo {
     gamePlayStatus: GamePlayStatus,
     noOfRounds: number,
     currentRound: number,
+    maxWordSelectionTime: number,
+    maxDrawingTime: number,
     currentDrawingParticipant: Participant | null,
     participants: Participant[],
     autoSelectWordTaskId: string | null,
@@ -56,6 +62,8 @@ class GamePlayInfo {
     this.gamePlayStatus = gamePlayStatus;
     this.noOfRounds = noOfRounds;
     this.currentRound = currentRound;
+    this.maxWordSelectionTime = maxWordSelectionTime;
+    this.maxDrawingTime = maxDrawingTime;
     this.currentDrawingParticipant = currentDrawingParticipant;
     this.participants = participants == null ? [] : participants;
     this.autoSelectWordTaskId = autoSelectWordTaskId;

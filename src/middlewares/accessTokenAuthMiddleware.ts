@@ -13,7 +13,7 @@ const accessTokenAuthMiddleware = function (req: any, res: Response, next: NextF
 
   if (payload == null) {
     logger.logInfo(TAG, "accessTokenAuthMiddleware :: payload is null");
-    res.status(401).json(ErrorResponse.unAuthorised());
+    res.status(401).json(ErrorResponse.unAuthorized());
     return;
   }
 

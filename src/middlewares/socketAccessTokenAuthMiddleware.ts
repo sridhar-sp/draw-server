@@ -3,6 +3,7 @@ import TokenService from "../services/TokenService";
 import { Socket } from "socket.io";
 import JWTAccessTokenPayload from "../models/JWTAccessTokenPayload";
 import SimpleUserRecord from "../models/SimpleUserRecord";
+import ErrorResponse from "../models/ErrorResponse"
 import logger from "../logger/logger";
 
 const tokenService = new TokenService();
@@ -12,7 +13,7 @@ const socketAccessTokenMiddleware = function (socket: Socket, next: Function) {
   const gameKey = socket.handshake.query.gameKey;
 
   if (accessToken === null || accessToken === "" || gameKey == null || gameKey === "") {
-    next(new Error("Unauthorized"));
+    next(new Error(ErrorResponse.unAuthorized().toJson()));
     setTimeout(function () {
       socket.disconnect();
     }, 1500);
@@ -27,7 +28,7 @@ const socketAccessTokenMiddleware = function (socket: Socket, next: Function) {
       next();
     })
     .catch((error) => {
-      next(new Error("Unauthorized"));
+      next(new Error(ErrorResponse.unAuthorized().toJson()));
       setTimeout(function () {
         socket.disconnect();
       }, 3000);

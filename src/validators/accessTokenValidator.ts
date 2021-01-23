@@ -10,7 +10,7 @@ const accessTokenValidator = function (req: any, res: Response, next: NextFuncti
   const accessToken = extractToken(authorization);
   if (!accessToken) {
     logger.logInfo(TAG, "accessTokenValidator :: No access token at headers");
-    res.status(401).json(ErrorResponse.unAuthorised());
+    res.status(401).json(ErrorResponse.unAuthorized());
     return;
   }
 
