@@ -2,6 +2,7 @@ import { Socket } from "socket.io";
 
 import GamePlayInfoRepository from "../repositories/GamePlayInfoRepository";
 import SuccessResponse from "../models/SuccessResponse";
+import ErrorResponse from "../models/ErrorResponse"
 import GamePlayStatus from "../models/GamePlayStatus";
 import GameScreen from "../models/GameScreen";
 import GameScreenStatePayload from "../models/GameScreenStatePayload";
@@ -18,6 +19,7 @@ import DrawGameScreenStateData from "../models/DrawGameScreenStateData";
 import QuestionRepository from "../repositories/QuestionRepository";
 import SocketUtils from "../socket/SocketUtils";
 import ViewGameScreenStateData from "../models/ViewGameScreenStateData";
+import SimpleGameInfo from "../models/SimpleGameInfo";
 
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
@@ -38,8 +40,35 @@ class GameEventHandlerService {
     this.taskScheduler = taskScheduler;
   }
 
-  async handleJoin(socket: Socket) {
-    await this.gamePlayInfoRepository.addParticipant(socket.getGameKey(), socket.id);
+  async handleJoin(socket: Socket, errJoiningRoom: Error) {
+
+    if (errJoiningRoom) {
+      socket.emit(SocketEvents.Room.JOINED, ErrorResponse.createErrorResponse(500, "Failed to join room"))
+    }
+
+    const gameKey = socket.getGameKey();
+
+    this.gamePlayInfoRepository.addParticipant(gameKey, socket.id)
+      .then(_ => this.gamePlayInfoRepository.getGameInfo(gameKey))
+      .then(gamePlayInfo => {
+        if (gamePlayInfo == null)
+          throw new Error(`No game play info exist for game key ${gameKey}`)
+
+        socket.emit(SocketEvents.Room.JOINED, SuccessResponse.createSuccessResponse(
+          SimpleGameInfo.createSimpleGameInfo(
+            gamePlayInfo.gameKey,
+            gamePlayInfo.noOfRounds,
+            gamePlayInfo.maxDrawingTime,
+            gamePlayInfo.maxWordSelectionTime
+          )
+        ))
+
+        socket.to(socket.getGameKey()).emit(SocketEvents.Room.MEMBER_ADD,
+          SuccessResponse.createSuccessResponse(socket.getUserRecord()))
+      }).catch(error => {
+        socket.emit(SocketEvents.Room.JOINED, ErrorResponse.createErrorResponse(500, String(error)))
+      })
+
   }
 
   async handleLeave(socket: Socket) {

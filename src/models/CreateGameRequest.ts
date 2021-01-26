@@ -7,7 +7,7 @@ class CreateGameRequest {
     return new CreateGameRequest(noOfRounds, maxDrawingTime, maxWordSelectionTime);
   }
 
-  private constructor(noOfRounds: number, maxDrawingTime: number, maxWordSelectionTime: number) {
+  protected constructor(noOfRounds: number, maxDrawingTime: number, maxWordSelectionTime: number) {
     this.noOfRounds = noOfRounds;
     this.maxDrawingTime = maxDrawingTime;
     this.maxWordSelectionTime = maxWordSelectionTime;

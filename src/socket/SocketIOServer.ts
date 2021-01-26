@@ -90,8 +90,9 @@ class SocketIOServer {
             name = ${socket.request.userRecord.displayName}`);
 
       socket.join(socket.getGameKey(), (err) => {
-        this.roomEventHandlerService.handleJoin(socket, err);
-        this.gameEventHandlerService.handleJoin(socket);
+        //this.roomEventHandlerService.handleJoin(socket, err);
+        //To-Do check, is await needs to be added here or not
+        this.gameEventHandlerService.handleJoin(socket, err);
       });
 
       socket.on("disconnect", () => {
