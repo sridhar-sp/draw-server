@@ -80,7 +80,7 @@ class SocketIOServer {
   }
 
   private onTimeToEndDrawingSession(task: Task) {
-    logger.log("***** onTimeToEndDrawingSession Payload " + task.payload);
+    logger.logInfo(SocketIOServer.TAG, `onTimeToEndDrawingSession ${task.payload}`);
   }
 
   private setup() {

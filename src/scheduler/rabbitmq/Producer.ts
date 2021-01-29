@@ -3,16 +3,11 @@ import { Replies, Message } from "amqplib/callback_api";
 import AMQBBase from "./amqpBase";
 import logger from "../../logger/logger";
 
-class MessagingSystemDetails {
-  static INTERMEDIATE_EXCHANGE = "intermediate_exchange";
-  static INTERMEDIATE_EXCHANGE_TYPE = "fanout";
-  static INTERMEDIATE_QUEUE = "intermediate_queue";
-
-  static FINAL_EXCHANGE = "final_exchange";
-  static FINAL_EXCHANGE_TYPE = "fanout";
-}
 
 class Producer extends AMQBBase {
+
+  private static LOG_TAG = "Producer"
+
   public static create(url: string): Producer {
     return new Producer(url);
   }
@@ -22,27 +17,25 @@ class Producer extends AMQBBase {
   }
 
   public sendDelayedMessageToQueue(queueName: string, delayInMills: number, data: string): Promise<void> {
-    logger.log(`Initiate Send delayed message to queue at ${new Date().toTimeString()}`);
+    logger.logInfo(Producer.LOG_TAG, `Initiate Send delayed message to ${queueName} at ${new Date().toTimeString()}`);
+
+    const INTERMEDIATE_QUEUE = `${queueName}_INTERMEDIATE_QUEUE`;
+    const INTERMEDIATE_EXCHANGE = `${queueName}_INTERMEDIATE_EXCHANGE`;
+    const INTERMEDIATE_EXCHANGE_TYPE = "fanout";
+
+    const FINAL_QUEUE = queueName;
+    const FINAL_EXCHANGE = `${queueName}_FINAL_EXCHANGE`;
+    const FINAL_EXCHANGE_TYPE = "fanout";
+
     return new Promise((resolve, reject) => {
-      this.assertExchange(
-        MessagingSystemDetails.INTERMEDIATE_EXCHANGE,
-        MessagingSystemDetails.INTERMEDIATE_EXCHANGE_TYPE
-      )
-        .then((_) =>
-          this.assertExchange(MessagingSystemDetails.FINAL_EXCHANGE, MessagingSystemDetails.FINAL_EXCHANGE_TYPE)
-        )
-        .then((_) =>
-          this.assertQueue(MessagingSystemDetails.INTERMEDIATE_QUEUE, {
-            deadLetterExchange: MessagingSystemDetails.FINAL_EXCHANGE,
-          })
-        )
-        .then((_) => this.assertQueue(queueName, {}))
-        .then((_) =>
-          this.bindQueue(MessagingSystemDetails.INTERMEDIATE_QUEUE, MessagingSystemDetails.INTERMEDIATE_EXCHANGE, "")
-        )
-        .then((_) => this.bindQueue(queueName, MessagingSystemDetails.FINAL_EXCHANGE, ""))
-        .then((_) => {
-          this.channel?.sendToQueue(MessagingSystemDetails.INTERMEDIATE_QUEUE, Buffer.from(data), {
+      this.assertExchange(INTERMEDIATE_EXCHANGE, INTERMEDIATE_EXCHANGE_TYPE)
+        .then(_ => this.assertExchange(FINAL_EXCHANGE, FINAL_EXCHANGE_TYPE))
+        .then(_ => this.assertQueue(INTERMEDIATE_QUEUE, { deadLetterExchange: FINAL_EXCHANGE, }))
+        .then(_ => this.assertQueue(FINAL_QUEUE, {}))
+        .then(_ => this.bindQueue(INTERMEDIATE_QUEUE, INTERMEDIATE_EXCHANGE, ""))
+        .then(_ => this.bindQueue(FINAL_QUEUE, FINAL_EXCHANGE, ""))
+        .then(_ => {
+          this.channel?.sendToQueue(INTERMEDIATE_QUEUE, Buffer.from(data), {
             expiration: delayInMills,
           });
           logger.log(`Send message to queue at ${new Date().toTimeString()}`);

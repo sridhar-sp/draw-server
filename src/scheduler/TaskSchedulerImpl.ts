@@ -23,7 +23,7 @@ class TaskSchedulerImpl implements TaskScheduler {
   scheduleTask(delayInMilliseconds: number, task: Task): Promise<string> {
     return new Promise((resolve: (taskId: string) => void, reject: (error: Error) => void) => {
       this.taskRepository
-        .createTask(task.taskId, 25)
+        .createTask(task.taskId, task.ttlInSeconds)
         .then(() => this.producer.sendDelayedMessageToQueue(task.taskType, delayInMilliseconds, task.toJson()))
         .then(() => resolve(task.taskId))
         .catch((error) => reject(error));

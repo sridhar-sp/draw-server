@@ -20,6 +20,8 @@ import QuestionRepository from "../repositories/QuestionRepository";
 import SocketUtils from "../socket/SocketUtils";
 import ViewGameScreenStateData from "../models/ViewGameScreenStateData";
 import SimpleGameInfo from "../models/SimpleGameInfo";
+import GamePlayInfo from "../models/GamePlayInfo";
+import AutoEndDrawingSessionTaskRequest from "../models/AutoEndDrawingSessionTaskRequest";
 
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
@@ -28,10 +30,6 @@ class GameEventHandlerService {
   private gamePlayInfoRepository: GamePlayInfoRepository;
   private taskScheduler: TaskScheduler;
   private questionRepository: QuestionRepository;
-
-  //Will be moved to config or based on the user config value when creating the game
-  private static MAX_TIME_TO_SELECT_A_DRAWING_WORD = 3000;
-  private static AUTO_SELECT_DRAWING_WORD_TTL_IN_SECONDS = 60;
 
   constructor(socketServer: Server, taskScheduler: TaskScheduler) {
     this.socketServer = socketServer;
@@ -80,12 +78,15 @@ class GameEventHandlerService {
   }
 
   async handleStartGame(socket: Socket) {
-    const gameKey = socket.getGameKey();
-    await this.gamePlayInfoRepository.assignRoles(gameKey);
-    await this.gamePlayInfoRepository.updateGameStatus(gameKey, GamePlayStatus.STARTED);
 
-    console.log("SocketEvents.GAME.START_GAME " + SocketEvents.Game.START_GAME);
-    this.socketServer.in(socket.getGameKey()).emit(SocketEvents.Game.START_GAME);
+    const gameKey = socket.getGameKey();
+
+    logger.logInfo(GameEventHandlerService.TAG, `Start game : game key = ${gameKey}`)
+
+    await this.gamePlayInfoRepository.assignRoles(gameKey)
+      .then(_ => this.gamePlayInfoRepository.updateGameStatus(gameKey, GamePlayStatus.STARTED))
+      .then(_ => this.socketServer.in(gameKey).emit(SocketEvents.Game.START_GAME))
+      .catch(error => logger.logError(GameEventHandlerService.TAG, error))
   }
 
   async handleGameScreenState(socket: Socket) {
@@ -140,20 +141,34 @@ class GameEventHandlerService {
     const gameKey = socket.getGameKey();
     logger.logInfo(GameEventHandlerService.TAG, `REQUEST_LIST_OF_WORD for game = ${gameKey}`);
     const questions = this.questionRepository.getRandomQuestions(5);
-    this.taskScheduler
-      .scheduleTask(
-        GameEventHandlerService.MAX_TIME_TO_SELECT_A_DRAWING_WORD,
+    this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
+      .then(gamePlayInfo => this.taskScheduler.scheduleTask(
+        gamePlayInfo.maxWordSelectionTime * 1000,
         Task.create(
           TaskType.AUTO_SELECT_WORD,
-          GameEventHandlerService.AUTO_SELECT_DRAWING_WORD_TTL_IN_SECONDS,
+          gamePlayInfo.maxWordSelectionTime + 10,
           AutoSelectWordTaskRequest.create(socket.getGameKey(), socket.id, questions[0]).toJson()
         )
-      )
-      .then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.AUTO_SELECT_WORD, taskId))
+      )).then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.AUTO_SELECT_WORD, taskId))
       .then(() => {
         socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
       })
       .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
+
+    // this.taskScheduler
+    //   .scheduleTask(
+    //     GameEventHandlerService.MAX_TIME_TO_SELECT_A_DRAWING_WORD,
+    //     Task.create(
+    //       TaskType.AUTO_SELECT_WORD,
+    //       GameEventHandlerService.AUTO_SELECT_DRAWING_WORD_TTL_IN_SECONDS,
+    //       AutoSelectWordTaskRequest.create(socket.getGameKey(), socket.id, questions[0]).toJson()
+    //     )
+    //   )
+    //   .then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.AUTO_SELECT_WORD, taskId))
+    //   .then(() => {
+    //     socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
+    //   })
+    //   .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
   }
 
   async handleSelectWord(fromSocket: Socket, word: string) {
@@ -164,6 +179,7 @@ class GameEventHandlerService {
       .getTaskId(gameKey, TaskType.AUTO_SELECT_WORD)
       .then((autoSelectWordTaskId) => this.taskScheduler.invalidateTask(autoSelectWordTaskId!!))
       .then(() => this.gamePlayInfoRepository.updateSelectedWord(gameKey, word))
+      .then(gamePlayInfo => this.scheduleDrawingSessionEndTask(gamePlayInfo))
       .then(() => SocketUtils.getAllSocketFromRoom(this.socketServer, gameKey))
       .then((socketList: Array<Socket>) => {
         socketList.forEach((socket) => {
@@ -195,6 +211,12 @@ class GameEventHandlerService {
         });
       })
       .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
+  }
+
+  private scheduleDrawingSessionEndTask(gamePlayInfo: GamePlayInfo): Promise<string> {
+    return this.taskScheduler.scheduleTask(gamePlayInfo.maxDrawingTime * 1000,
+      Task.create(TaskType.END_DRAWING_SESSION, gamePlayInfo.maxDrawingTime + 10,
+        AutoEndDrawingSessionTaskRequest.create(gamePlayInfo.gameKey).toJson()))
   }
 
   async tempRotateRoles(gameKey: string) {

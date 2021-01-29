@@ -42,6 +42,19 @@ class GamePlayInfoRepository {
     });
   }
 
+  getGameInfoOrThrow(gameKey: string): Promise<GamePlayInfo> {
+    return new Promise((resolve: (gamePlayInfo: GamePlayInfo) => void, reject) => {
+      this.redisHelper
+        .getString(gameKey)
+        .then(async (gamePlayInfoJson) => {
+          const gamePlayInfo = GamePlayInfo.fromJson(gamePlayInfoJson ? gamePlayInfoJson : "")
+          if (null == gamePlayInfo) reject(`No game record found for game key = ${gameKey}`);
+          else resolve(gamePlayInfo);
+        })
+        .catch(err => reject(err));
+    });
+  }
+
 
   deleteGameInfo(gameKey: string): Promise<boolean> {
     return this.redisHelper.delete_(gameKey);
@@ -93,17 +106,16 @@ class GamePlayInfoRepository {
     });
   }
 
-  updateSelectedWord(gameKey: string, word: string): Promise<void> {
+  updateSelectedWord(gameKey: string, word: string): Promise<GamePlayInfo> {
     logger.logInfo(GamePlayInfoRepository.TAG, `updateSelectedWord ${word} for game ${gameKey}`);
     return new Promise((resolve, reject) => {
-      this.getGameInfo(gameKey)
+      this.getGameInfoOrThrow(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
-
           gamePlayInfo.word = word;
-          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
+          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson())
+            .then(_ => gamePlayInfo);
         })
-        .then((_) => resolve())
+        .then((gamePlayInfo) => resolve(gamePlayInfo))
         .catch((err) => reject(err));
     });
   }
