@@ -9,7 +9,6 @@ import socketIo from "socket.io";
 import { Server as HttpServer } from "http";
 import { Server as HttpsServer } from "https";
 import TaskScheduler from "../scheduler/TaskScheduler";
-import TaskConsumer from "../scheduler/TaskConsumer";
 import TaskRepository from "../scheduler/TaskRepository";
 import TaskSchedulerImpl from "../scheduler/TaskSchedulerImpl";
 import TaskRepositoryImpl from "../scheduler/TaskRepositoryImpl";
@@ -19,11 +18,9 @@ import TaskType from "../scheduler/TaskType";
 import logger from "../logger/logger";
 import Task from "../scheduler/Task";
 
-import SuccessResponse from "../models/SuccessResponse";
 import AutoSelectWordTaskRequest from "../models/AutoSelectWordTaskRequest";
-import GameScreen from "../models/GameScreen";
-import GameScreenStatePayload from "../models/GameScreenStatePayload";
-import DrawGameScreenStateData from "../models/DrawGameScreenStateData";
+import AutoEndDrawingSessionTaskRequest from "../models/AutoEndDrawingSessionTaskRequest";
+import DismissLeaderBoardTaskRequest from "../models/DismissLeaderBoardTaskRequest";
 
 class SocketIOServer {
   private static TAG = "SocketIOServer";
@@ -47,7 +44,10 @@ class SocketIOServer {
     autoSelectTaskConsumer.consume(TaskType.AUTO_SELECT_WORD, this.onTimeToAutoSelectWord.bind(this));
 
     const endDrawingSessionTaskConsumer = TaskConsumerImpl.create(taskRepository);
-    endDrawingSessionTaskConsumer.consume(TaskType.END_DRAWING_SESSION, this.onTimeToEndDrawingSession);
+    endDrawingSessionTaskConsumer.consume(TaskType.END_DRAWING_SESSION, this.onTimeToEndDrawingSession.bind(this));
+
+    const dismissLeaderBoardTaskConsumer = TaskConsumerImpl.create(taskRepository);
+    dismissLeaderBoardTaskConsumer.consume(TaskType.DISMISS_LEADER_BOARD, this.onDismissLeaderBoard.bind(this));
   }
 
   static bind(httpServer: any) {
@@ -70,10 +70,7 @@ class SocketIOServer {
 
     const socketWhoIsYetToSelectTheWord = this.socketServer.sockets.sockets[request.socketId];
     if (socketWhoIsYetToSelectTheWord == null) {
-      logger.logError(
-        SocketIOServer.TAG,
-        "onTimeToAutoSelectWord socket becomes a ghost, can't proceed with the task execution"
-      );
+      logger.logError(SocketIOServer.TAG, "onTimeToAutoSelectWord socket becomes a ghost, can't proceed with the task execution");
       return;
     }
     this.gameEventHandlerService.handleSelectWord(socketWhoIsYetToSelectTheWord, request.word);
@@ -81,6 +78,14 @@ class SocketIOServer {
 
   private onTimeToEndDrawingSession(task: Task) {
     logger.logInfo(SocketIOServer.TAG, `onTimeToEndDrawingSession ${task.payload}`);
+    const request = AutoEndDrawingSessionTaskRequest.fromJson(task.payload)
+    this.gameEventHandlerService.endCurrentDrawingSession(request.gameKey)
+  }
+
+  private onDismissLeaderBoard(task: Task) {
+    logger.logInfo(SocketIOServer.TAG, `onDismissLeaderBoard ${task.payload}`);
+    const request = DismissLeaderBoardTaskRequest.fromJson(task.payload)
+    this.gameEventHandlerService.rotateUserGameScreenState(request.gameKey)
   }
 
   private setup() {

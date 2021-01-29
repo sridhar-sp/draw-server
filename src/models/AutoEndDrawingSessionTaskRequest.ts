@@ -1,5 +1,5 @@
 class AutoEndDrawingSessionTaskRequest {
-  private gameKey: string;
+  public gameKey: string;
 
   static create(gameKey: string) {
     return new AutoEndDrawingSessionTaskRequest(gameKey);

@@ -1,5 +1,6 @@
 import { request } from "express";
 import GameScreen from "./GameScreen";
+import SimpleUserRecord from "./SimpleUserRecord";
 
 class GameScreenStatePayload {
   public gameScreenState: GameScreen;
@@ -7,6 +8,18 @@ class GameScreenStatePayload {
 
   static create(gameScreenState: GameScreen, screenData: string): GameScreenStatePayload {
     return new GameScreenStatePayload(gameScreenState, screenData);
+  }
+
+  static createWaitForDrawingWord(simpleUserRecord: SimpleUserRecord): GameScreenStatePayload {
+    return new GameScreenStatePayload(GameScreen.State.WAIT_FOR_DRAWING_WORD, simpleUserRecord.toJson());
+  }
+
+  static createSelectDrawingWord(): GameScreenStatePayload {
+    return new GameScreenStatePayload(GameScreen.State.SELECT_DRAWING_WORD, "");
+  }
+
+  static createLeaderBoard(): GameScreenStatePayload {
+    return new GameScreenStatePayload(GameScreen.State.LEADER_BOARD, "");
   }
 
   constructor(gameScreenState: GameScreen, screenData: string) {

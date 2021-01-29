@@ -60,6 +60,10 @@ class GamePlayInfoRepository {
     return this.redisHelper.delete_(gameKey);
   }
 
+  saveGameInfo(gamePlayInfo: GamePlayInfo): Promise<boolean> {
+    return this.redisHelper.setString(gamePlayInfo.gameKey, gamePlayInfo.toJson())
+  }
+
   addParticipant(gameKey: string, socketId: string): Promise<void> {
     logger.log(`addParticipant ${socketId} for game ${gameKey}`);
     return new Promise((resolve, reject) => {

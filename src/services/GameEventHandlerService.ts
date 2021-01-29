@@ -22,9 +22,12 @@ import ViewGameScreenStateData from "../models/ViewGameScreenStateData";
 import SimpleGameInfo from "../models/SimpleGameInfo";
 import GamePlayInfo from "../models/GamePlayInfo";
 import AutoEndDrawingSessionTaskRequest from "../models/AutoEndDrawingSessionTaskRequest";
+import DismissLeaderBoardTaskRequest from "../models/DismissLeaderBoardTaskRequest";
 
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
+
+  private static LEADER_BOARD_VISIBLE_TIME_IN_SECONDS = 3
 
   private socketServer: Server;
   private gamePlayInfoRepository: GamePlayInfoRepository;
@@ -83,9 +86,56 @@ class GameEventHandlerService {
 
     logger.logInfo(GameEventHandlerService.TAG, `Start game : game key = ${gameKey}`)
 
-    await this.gamePlayInfoRepository.assignRoles(gameKey)
-      .then(_ => this.gamePlayInfoRepository.updateGameStatus(gameKey, GamePlayStatus.STARTED))
+    await this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
+      .then(gamePlayInfo => this.rotateRoles(gamePlayInfo))
+      .then(gamePlayInfo => {
+        gamePlayInfo.gamePlayStatus = GamePlayStatus.STARTED;
+        gamePlayInfo.currentRound = 1;
+        return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+      })
       .then(_ => this.socketServer.in(gameKey).emit(SocketEvents.Game.START_GAME))
+      .catch(error => logger.logError(GameEventHandlerService.TAG, error))
+  }
+
+  async endCurrentDrawingSession(gameKey: string) {
+    this.socketServer.in(gameKey).emit(SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
+      SuccessResponse.createSuccessResponse(GameScreenStatePayload.createLeaderBoard()))
+
+    this.scheduleTask(TaskType.DISMISS_LEADER_BOARD, DismissLeaderBoardTaskRequest.create(gameKey).toJson()
+      , GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
+  }
+
+  async rotateUserGameScreenState(gameKey: string) {
+    logger.logInfo(GameEventHandlerService.TAG, `rotateUserRoles for game = ${gameKey}`)
+    this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
+      .then(gamePlayInfo => this.rotateRoles(gamePlayInfo))
+      .then(gamePlayInfo => {
+        if (gamePlayInfo.participants[0].gameScreenState == GameScreen.State.SELECT_DRAWING_WORD)
+          gamePlayInfo.currentRound++;
+
+        return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo).then(_ => gamePlayInfo)
+      })
+      .then(gamePlayInfo => {
+        gamePlayInfo.participants.forEach(participant => {
+
+          const drawingParticipant = gamePlayInfo.findDrawingParticipant();
+          if (null == drawingParticipant)
+            throw new Error(`No drawing participant found after rotating roles`);
+
+          const drawingParticipantSocket = this.socketServer.sockets.sockets[drawingParticipant.socketId];
+          if (null == drawingParticipantSocket)
+            throw new Error(`Drawing participant socket instance is not found for game ${gameKey}`);
+
+          let response
+          if (participant.socketId == drawingParticipant.socketId) {
+            response = SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord())
+          } else {
+            response = SuccessResponse.createSuccessResponse(GameScreenStatePayload.createWaitForDrawingWord(drawingParticipantSocket.getUserRecord()))
+          }
+
+          this.socketServer.to(participant.socketId).emit(SocketEvents.Game.GAME_SCREEN_STATE_RESULT, response);
+        })
+      })
       .catch(error => logger.logError(GameEventHandlerService.TAG, error))
   }
 
@@ -105,7 +155,7 @@ class GameEventHandlerService {
           case GameScreen.State.NONE:
             return SuccessResponse.createSuccessResponse(GameScreenStatePayload.create(gameScreenState, ""));
           case GameScreen.State.SELECT_DRAWING_WORD:
-            return SuccessResponse.createSuccessResponse(GameScreenStatePayload.create(gameScreenState, ""));
+            return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord());
           case GameScreen.State.DRAW:
             if (gamePlayInfo.word == null)
               throw new Error("No drawing word is selected, but the game screen state is set as RAW");
@@ -123,8 +173,9 @@ class GameEventHandlerService {
               throw new Error(`Drawing participant socket instance is not found for game ${gameKey}`);
 
             return SuccessResponse.createSuccessResponse(
-              GameScreenStatePayload.create(gameScreenState, drawingParticipantSocket.getUserRecord().toJson())
+              GameScreenStatePayload.createWaitForDrawingWord(drawingParticipantSocket.getUserRecord())
             );
+
           case GameScreen.State.VIEW:
             return SuccessResponse.createSuccessResponse(GameScreenStatePayload.create(gameScreenState, ""));
           case GameScreen.State.LEADER_BOARD:
@@ -142,14 +193,10 @@ class GameEventHandlerService {
     logger.logInfo(GameEventHandlerService.TAG, `REQUEST_LIST_OF_WORD for game = ${gameKey}`);
     const questions = this.questionRepository.getRandomQuestions(5);
     this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
-      .then(gamePlayInfo => this.taskScheduler.scheduleTask(
-        gamePlayInfo.maxWordSelectionTime * 1000,
-        Task.create(
-          TaskType.AUTO_SELECT_WORD,
-          gamePlayInfo.maxWordSelectionTime + 10,
-          AutoSelectWordTaskRequest.create(socket.getGameKey(), socket.id, questions[0]).toJson()
-        )
-      )).then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.AUTO_SELECT_WORD, taskId))
+      .then(gamePlayInfo => this.scheduleTask(TaskType.AUTO_SELECT_WORD,
+        AutoSelectWordTaskRequest.create(socket.getGameKey(), socket.id, questions[0]).toJson(),
+        gamePlayInfo.maxWordSelectionTime))
+      .then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.AUTO_SELECT_WORD, taskId))
       .then(() => {
         socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
       })
@@ -182,6 +229,8 @@ class GameEventHandlerService {
       .then(gamePlayInfo => this.scheduleDrawingSessionEndTask(gamePlayInfo))
       .then(() => SocketUtils.getAllSocketFromRoom(this.socketServer, gameKey))
       .then((socketList: Array<Socket>) => {
+        const hint = this.createHint(word)
+
         socketList.forEach((socket) => {
           if (socket.id == fromSocket.id) {
             socket.emit(
@@ -191,19 +240,12 @@ class GameEventHandlerService {
               )
             );
           } else {
-            const hint = [];
-            for (let index = 0; index < word.length; index++) {
-              const element = word.charAt(index);
-              if (Math.random() > 0.5) hint.push(word.charAt(index));
-              else hint.push("_");
-            }
-
             socket.emit(
               SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
               SuccessResponse.createSuccessResponse(
                 GameScreenStatePayload.create(
                   GameScreen.State.VIEW,
-                  ViewGameScreenStateData.create(hint.join(), fromSocket.getUserRecord()).toJson()
+                  ViewGameScreenStateData.create(hint, fromSocket.getUserRecord()).toJson()
                 )
               )
             );
@@ -213,10 +255,19 @@ class GameEventHandlerService {
       .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
   }
 
+  private createHint(word: string): string {
+    const hint = [];
+    for (let index = 0; index < word.length; index++) {
+      const element = word.charAt(index);
+      if (Math.random() > 0.5) hint.push(word.charAt(index));
+      else hint.push("_");
+    }
+    return hint.join();
+  }
+
   private scheduleDrawingSessionEndTask(gamePlayInfo: GamePlayInfo): Promise<string> {
-    return this.taskScheduler.scheduleTask(gamePlayInfo.maxDrawingTime * 1000,
-      Task.create(TaskType.END_DRAWING_SESSION, gamePlayInfo.maxDrawingTime + 10,
-        AutoEndDrawingSessionTaskRequest.create(gamePlayInfo.gameKey).toJson()))
+    return this.scheduleTask(TaskType.END_DRAWING_SESSION,
+      AutoEndDrawingSessionTaskRequest.create(gamePlayInfo.gameKey).toJson(), gamePlayInfo.maxDrawingTime)
   }
 
   async tempRotateRoles(gameKey: string) {
@@ -255,6 +306,42 @@ class GameEventHandlerService {
       .catch((error) => {
         logger.logError(GameEventHandlerService.TAG, error);
       });
+  }
+
+
+
+  private rotateRoles(gamePlayInfo: GamePlayInfo): Promise<GamePlayInfo> {
+
+    logger.logInfo(GameEventHandlerService.TAG, `rotateRoles for game ${gamePlayInfo.gameKey}`);
+
+    if (gamePlayInfo.participants.length == 0) throw new Error(`No participant available on game ${gamePlayInfo.gameKey}`);
+
+    let nextDrawingParticipantPos;
+    if (gamePlayInfo.currentDrawingParticipant == null) {
+      nextDrawingParticipantPos = 0;
+    } else {
+      nextDrawingParticipantPos = gamePlayInfo.findNextParticipantIndex(
+        gamePlayInfo.currentDrawingParticipant.socketId
+      );
+      // if (nextDrawingParticipantPos == 0) {
+      //   gamePlayInfo.currentRound++; // One round trip is completed
+      // }
+    }
+    const nextDrawingParticipant = gamePlayInfo.participants[nextDrawingParticipantPos];
+    gamePlayInfo.currentDrawingParticipant = nextDrawingParticipant;
+
+    gamePlayInfo.participants.forEach((participant) => {
+      if (participant.socketId == nextDrawingParticipant.socketId)
+        participant.gameScreenState = GameScreen.State.SELECT_DRAWING_WORD;
+      else participant.gameScreenState = GameScreen.State.WAIT_FOR_DRAWING_WORD;
+      logger.logInfo(GameEventHandlerService.TAG, `Assigning ${participant.socketId} with ${participant.gameScreenState}`);
+    });
+
+    return Promise.resolve(gamePlayInfo);
+  }
+
+  private scheduleTask(taskType: TaskType, payload: string, taskDelayInSeconds: number): Promise<string> {
+    return this.taskScheduler.scheduleTask(taskDelayInSeconds * 1000, Task.create(taskType, taskDelayInSeconds + 10, payload))
   }
 }
 
