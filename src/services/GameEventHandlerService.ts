@@ -259,10 +259,10 @@ class GameEventHandlerService {
     const hint = [];
     for (let index = 0; index < word.length; index++) {
       const element = word.charAt(index);
-      if (Math.random() > 0.5) hint.push(word.charAt(index));
+      if (Math.random() > 0.8) hint.push(word.charAt(index));
       else hint.push("_");
     }
-    return hint.join();
+    return hint.join("");
   }
 
   private scheduleDrawingSessionEndTask(gamePlayInfo: GamePlayInfo): Promise<string> {
