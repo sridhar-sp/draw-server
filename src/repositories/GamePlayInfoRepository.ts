@@ -30,7 +30,7 @@ class GamePlayInfoRepository {
     })
   }
 
-  getGameInfo(gameKey: string): Promise<GamePlayInfo | null> {
+  private getGameInfo(gameKey: string): Promise<GamePlayInfo | null> {
     return new Promise((resolve: (gamePlayInfo: GamePlayInfo | null) => void, reject) => {
       this.redisHelper
         .getString(gameKey)
@@ -67,10 +67,8 @@ class GamePlayInfoRepository {
   addParticipant(gameKey: string, socketId: string): Promise<void> {
     logger.log(`addParticipant ${socketId} for game ${gameKey}`);
     return new Promise((resolve, reject) => {
-      this.getGameInfo(gameKey)
+      this.getGameInfoOrThrow(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
-
           //To-do based on game play status, decide which state to assign to the participant
           gamePlayInfo.addParticipant(Participant.create(socketId));
           return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
@@ -83,10 +81,8 @@ class GamePlayInfoRepository {
   removeParticipant(gameKey: string, socketId: string): Promise<void> {
     logger.log(`removeParticipant ${socketId} for game ${gameKey}`);
     return new Promise((resolve, reject) => {
-      this.getGameInfo(gameKey)
+      this.getGameInfoOrThrow(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
-
           gamePlayInfo.removeParticipant(socketId);
           return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
         })
@@ -98,10 +94,8 @@ class GamePlayInfoRepository {
   updateGameStatus(gameKey: string, gamePlayStatus: GamePlayStatus): Promise<void> {
     logger.logInfo(GamePlayInfoRepository.TAG, `updateGameStatus ${gamePlayStatus} for game ${gameKey}`);
     return new Promise((resolve, reject) => {
-      this.getGameInfo(gameKey)
+      this.getGameInfoOrThrow(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
-
           gamePlayInfo.updateGamePlayStatus(gamePlayStatus);
           return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
         })
@@ -127,10 +121,8 @@ class GamePlayInfoRepository {
   updateTaskId(gameKey: string, taskType: TaskType, taskId: string): Promise<void> {
     logger.log(`update ${taskType} id for game ${gameKey} with ${taskId} `);
     return new Promise((resolve, reject) => {
-      this.getGameInfo(gameKey)
+      this.getGameInfoOrThrow(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`No game record found for key: ${gameKey}`);
-
           if (taskType == TaskType.AUTO_SELECT_WORD) gamePlayInfo.setAutoSelectWordTaskId(taskId);
           else if (taskType == TaskType.END_DRAWING_SESSION) gamePlayInfo.setEndDrawingSessionTaskId(taskId);
 
@@ -143,16 +135,13 @@ class GamePlayInfoRepository {
 
   getTaskId(gameKey: string, taskType: TaskType): Promise<string | null> {
     return new Promise((resolve: (taskId: string | null) => void, reject: (error: Error) => void) => {
-      this.getGameInfo(gameKey)
+      this.getGameInfoOrThrow(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`getTaskId :: No game record found for key: ${gameKey}`);
-
           if (taskType == TaskType.AUTO_SELECT_WORD) {
             return gamePlayInfo.autoSelectWordTaskId;
           } else if (taskType == TaskType.END_DRAWING_SESSION) {
             return gamePlayInfo.endDrawingSessionTaskId;
           }
-
           throw new Error(`Unknown task type ${taskType}`);
         })
         .then((taskId) => resolve(taskId))
@@ -162,9 +151,8 @@ class GamePlayInfoRepository {
 
   getSelectedWord(gameKey: string): Promise<string> {
     return new Promise((resolve: (word: string) => void, reject: (error: Error) => void) => {
-      this.getGameInfo(gameKey)
+      this.getGameInfoOrThrow(gameKey)
         .then((gamePlayInfo) => {
-          if (null == gamePlayInfo) throw new Error(`getSelectedWord :: No game record found for key: ${gameKey}`);
 
           if (gamePlayInfo.word == null || gamePlayInfo.word.trim() == "")
             throw new Error(`getSelectedWord :: No word data found in game play record for key: ${gameKey}`);
@@ -179,9 +167,8 @@ class GamePlayInfoRepository {
   assignRoles(gameKey: string): Promise<void> {
     logger.log(`assignRoles for game ${gameKey}`);
     return new Promise((resolve, reject) => {
-      this.getGameInfo(gameKey)
+      this.getGameInfoOrThrow(gameKey)
         .then((gamePlayInfo) => {
-          if (gamePlayInfo == null) throw new Error(`No game record found for ${gameKey}`);
           if (gamePlayInfo.participants.length == 0) throw new Error(`No participant available on game ${gameKey}`);
 
           let nextDrawingParticipantPos;
@@ -220,26 +207,18 @@ class GamePlayInfoRepository {
 
   getGameScreenState(gameKey: string, socketId: string): Promise<GameScreen> {
     return new Promise((resolve: (gamePlayInfo: GameScreen) => void, reject) => {
-      this.getGameInfo(gameKey)
+      this.getGameInfoOrThrow(gameKey)
         .then(async (gamePlayInfo) => {
-          if (null == gamePlayInfo) {
+          const participantIndex: number = gamePlayInfo.findParticipantIndex(socketId);
+          if (participantIndex == -1) {
             logger.logInfo(
               GamePlayInfoRepository.TAG,
-              `Executing getGameScreenState, no game record found for ${gameKey} hence returning NONE as default`
+              `Executing getGameScreenState, no participant record found for ${socketId} hence returning NONE as default`
             );
             resolve(GameScreen.State.NONE);
-          } else {
-            const participantIndex: number = gamePlayInfo.findParticipantIndex(socketId);
-            if (participantIndex == -1) {
-              logger.logInfo(
-                GamePlayInfoRepository.TAG,
-                `Executing getGameScreenState, no participant record found for ${socketId} hence returning NONE as default`
-              );
-              resolve(GameScreen.State.NONE);
-              return;
-            }
-            resolve(gamePlayInfo.participants[participantIndex].gameScreenState);
+            return;
           }
+          resolve(gamePlayInfo.participants[participantIndex].gameScreenState);
         })
         .catch((err) => {
           reject(err);
