@@ -164,7 +164,8 @@ class GamePlayInfoRepository {
     });
   }
 
-  assignRoles(gameKey: string): Promise<void> {
+  //Not used
+  private assignRoles(gameKey: string): Promise<void> {
     logger.log(`assignRoles for game ${gameKey}`);
     return new Promise((resolve, reject) => {
       this.getGameInfoOrThrow(gameKey)

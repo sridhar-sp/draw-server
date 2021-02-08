@@ -12,16 +12,17 @@ class GamePlayInfo {
       copyObj.currentRound,
       copyObj.maxWordSelectionTime,
       copyObj.maxDrawingTime,
-      copyObj.currentDrawingParticipant,
-      copyObj.participants,
+      Participant.createCopy(copyObj.currentDrawingParticipant),
+      Participant.createCopies(copyObj.participants),
       copyObj.autoSelectWordTaskId,
       copyObj.endDrawingSessionTaskId,
-      copyObj.word
+      copyObj.word,
+      copyObj.matchIndex
     );
   }
 
   static create(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number) {
-    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null);
+    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null, 1);
   }
 
   public static fromJson(json: string): GamePlayInfo | null {
@@ -44,6 +45,7 @@ class GamePlayInfo {
   public autoSelectWordTaskId: string | null;
   public endDrawingSessionTaskId: string | null;
   public word: string | null;
+  private matchIndex: number
 
   constructor(
     gameKey: string,
@@ -56,7 +58,8 @@ class GamePlayInfo {
     participants: Participant[],
     autoSelectWordTaskId: string | null,
     endDrawingSessionTaskId: string | null,
-    word: string | null
+    word: string | null,
+    matchIndex: number
   ) {
     this.gameKey = gameKey;
     this.gamePlayStatus = gamePlayStatus;
@@ -69,6 +72,7 @@ class GamePlayInfo {
     this.autoSelectWordTaskId = autoSelectWordTaskId;
     this.endDrawingSessionTaskId = endDrawingSessionTaskId;
     this.word = word;
+    this.matchIndex = matchIndex
   }
 
   public toJson(): string {
@@ -145,6 +149,56 @@ class GamePlayInfo {
 
   setEndDrawingSessionTaskId(taskId: string) {
     this.endDrawingSessionTaskId = taskId;
+  }
+
+  incrementCurrentRound() {
+    this.currentRound++
+    this.matchIndex = 1
+  }
+
+  incrementMatchIndex() {
+    this.matchIndex++
+  }
+
+
+  getParticipantScoreForCurrentMatch(participantSocketId: string): number {
+    const participant = this.findParticipant(participantSocketId)
+    if (participant == null) {
+      logger.logInfo("GamePlayInfo", `getParticipantScoreForCurrentMatch no participant found for ${participantSocketId}`)
+      return -1
+    }
+    return participant.getScore(this.currentRound, this.matchIndex)
+  }
+
+  setDrawingParticipantScoreForCurrentMatch(score: number) {
+    if (this.currentDrawingParticipant == null) {
+      logger.logInfo("GamePlayInfo", `setDrawingParticipantScore no drawing participant found`)
+      return
+    }
+    this.setParticipantScoreForCurrentMatch(this.currentDrawingParticipant.socketId, score)
+  }
+
+  setParticipantScoreForCurrentMatch(participantSocketId: string, score: number) {
+    const participant = this.findParticipant(participantSocketId)
+    if (participant == null) {
+      logger.logInfo("GamePlayInfo", `getParticipantScoreForCurrentMatch no participant found for ${participantSocketId}`)
+      return -1
+    }
+    participant.setScore(this.currentRound, this.matchIndex, score)
+  }
+
+  isAllParticipantGuessedTheWordInCurrentRound(): boolean {
+
+    let isAllParticipantGuessedCorrectly = true
+
+    this.participants.forEach(participant => {
+
+      if (this.currentDrawingParticipant?.socketId != participant.socketId && participant.getScore(this.currentRound, this.matchIndex) == -1) {
+        isAllParticipantGuessedCorrectly = false;
+        return
+      }
+    })
+    return isAllParticipantGuessedCorrectly;
   }
 }
 

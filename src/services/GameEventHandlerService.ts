@@ -108,8 +108,14 @@ class GameEventHandlerService {
     this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
       .then(gamePlayInfo => this.rotateRoles(gamePlayInfo))
       .then(gamePlayInfo => {
-        if (gamePlayInfo.participants[0].gameScreenState == GameScreen.State.SELECT_DRAWING_WORD)
-          gamePlayInfo.currentRound++;
+
+        logger.logInfo(GameEventHandlerService.TAG, `rotateUserGameScreenState gamePlayInfo.participants[0].gameScreenState 
+        ${gamePlayInfo.participants[0].gameScreenState}`)
+
+        if (gamePlayInfo.participants[0].gameScreenState == GameScreen.State.SELECT_DRAWING_WORD) {
+          logger.logInfo(GameEventHandlerService.TAG, `rotateUserGameScreenState one round trip completed`)
+          gamePlayInfo.incrementCurrentRound()
+        }
 
         return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo).then(_ => gamePlayInfo)
       })
@@ -189,9 +195,7 @@ class GameEventHandlerService {
     logger.logInfo(GameEventHandlerService.TAG, `REQUEST_LIST_OF_WORD for game = ${gameKey}`);
     const questions = this.questionRepository.getRandomQuestions(5);
     this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
-      .then(gamePlayInfo => this.scheduleTask(TaskType.AUTO_SELECT_WORD,
-        AutoSelectWordTaskRequest.create(socket.getGameKey(), socket.id, questions[0]).toJson(),
-        gamePlayInfo.maxWordSelectionTime))
+      .then(gamePlayInfo => this.scheduleAutoSelectWordTask(gamePlayInfo, questions[0], socket.id))
       .then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.AUTO_SELECT_WORD, taskId))
       .then(() => {
         socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
@@ -223,6 +227,7 @@ class GameEventHandlerService {
       .then((autoSelectWordTaskId) => this.taskScheduler.invalidateTask(autoSelectWordTaskId!!))
       .then(() => this.gamePlayInfoRepository.updateSelectedWord(gameKey, word))
       .then(gamePlayInfo => this.scheduleDrawingSessionEndTask(gamePlayInfo))
+      .then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.END_DRAWING_SESSION, taskId))
       .then(() => SocketUtils.getAllSocketFromRoom(this.socketServer, gameKey))
       .then((socketList: Array<Socket>) => {
         const hint = this.createHint(word)
@@ -261,36 +266,76 @@ class GameEventHandlerService {
     return hint.join("");
   }
 
-  private scheduleDrawingSessionEndTask(gamePlayInfo: GamePlayInfo): Promise<string> {
-    return this.scheduleTask(TaskType.END_DRAWING_SESSION,
-      AutoEndDrawingSessionTaskRequest.create(gamePlayInfo.gameKey).toJson(), gamePlayInfo.maxDrawingTime)
-  }
 
   handleDrawingEvent(socket: Socket, data: Array<any>) {
     socket.to(socket.getGameKey()).emit(SocketEvents.Game.DRAWING_EVENT, data);
   }
 
-  handleAnswerEvent(socket: Socket, answer: string) {
+  async handleAnswerEvent(socket: Socket, answer: string) {
     logger.logInfo(
       GameEventHandlerService.TAG,
       `handleAnswerEvent from socket '${socket.getLoggingMeta()}' data = '${answer}'`
     );
     this.gamePlayInfoRepository
-      .getSelectedWord(socket.getGameKey())
-      .then((word) => {
+      .getGameInfoOrThrow(socket.getGameKey())
+      .then(async (gamePlayInfo) => {
+        const word = gamePlayInfo.word
+
+        if (word == null || word.trim() == "")
+          throw new Error(`handleDrawingEvent :: No word data found in game play record for key: ${socket.getGameKey()}`);
+
         logger.logInfo(GameEventHandlerService.TAG, `Word = '${word} :: answer'${answer}`);
-        let response: AnswerEventResponse
 
-        if (answer.toLowerCase() == word.toLowerCase())
-          response = AnswerEventResponse.createCorrectAnswerResponse(word)
-        else
-          response = AnswerEventResponse.createWrongAnswerResponse(answer)
+        if (answer.toLowerCase() == word.toLowerCase()) {
+          gamePlayInfo.setParticipantScoreForCurrentMatch(socket.id, word.length)//Dummy score
 
-        socket.emit(SocketEvents.Game.ANSWER_RESPONSE, SuccessResponse.createSuccessResponse(response));
+          const isEveryoneAnswered = gamePlayInfo.isAllParticipantGuessedTheWordInCurrentRound()
+          logger.logInfo(GameEventHandlerService.TAG, `isAllParticipantGuessedTheWordInCurrentRound ${isEveryoneAnswered}`)
+          if (isEveryoneAnswered) {
+            gamePlayInfo.setDrawingParticipantScoreForCurrentMatch(word.length / 2)//Dummy score
+            gamePlayInfo.incrementMatchIndex()
+          }
+
+          await this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+
+          socket.emit(SocketEvents.Game.ANSWER_RESPONSE,
+            SuccessResponse.createSuccessResponse(AnswerEventResponse.createCorrectAnswerResponse(word)));
+
+          if (isEveryoneAnswered) {
+            const endDrawingSessionTaskId = gamePlayInfo.endDrawingSessionTaskId
+            if (endDrawingSessionTaskId == null)
+              throw new Error("Everyone answered but task id to end the current drawing session is missing from record")
+
+            await this.taskScheduler.invalidateTask(endDrawingSessionTaskId)
+            this.endCurrentDrawingSession(gamePlayInfo.gameKey)
+          }
+        }
+        else {
+          socket.emit(SocketEvents.Game.ANSWER_RESPONSE,
+            SuccessResponse.createSuccessResponse(AnswerEventResponse.createWrongAnswerResponse(answer)));
+        }
+
       })
       .catch((error) => {
         logger.logError(GameEventHandlerService.TAG, error);
       });
+
+    // this.gamePlayInfoRepository
+    //   .getSelectedWord(socket.getGameKey())
+    //   .then((word) => {
+    //     logger.logInfo(GameEventHandlerService.TAG, `Word = '${word} :: answer'${answer}`);
+    //     let response: AnswerEventResponse
+
+    //     if (answer.toLowerCase() == word.toLowerCase())
+    //       response = AnswerEventResponse.createCorrectAnswerResponse(word)
+    //     else
+    //       response = AnswerEventResponse.createWrongAnswerResponse(answer)
+
+    //     socket.emit(SocketEvents.Game.ANSWER_RESPONSE, SuccessResponse.createSuccessResponse(response));
+    //   })
+    //   .catch((error) => {
+    //     logger.logError(GameEventHandlerService.TAG, error);
+    //   });
   }
 
 
@@ -323,6 +368,16 @@ class GameEventHandlerService {
     });
 
     return Promise.resolve(gamePlayInfo);
+  }
+
+  private scheduleDrawingSessionEndTask(gamePlayInfo: GamePlayInfo): Promise<string> {
+    return this.scheduleTask(TaskType.END_DRAWING_SESSION,
+      AutoEndDrawingSessionTaskRequest.create(gamePlayInfo.gameKey).toJson(), gamePlayInfo.maxDrawingTime)
+  }
+
+  private scheduleAutoSelectWordTask(gamePlayInfo: GamePlayInfo, word: string, socketId: string): Promise<string> {
+    return this.scheduleTask(TaskType.AUTO_SELECT_WORD,
+      AutoSelectWordTaskRequest.create(gamePlayInfo.gameKey, socketId, word).toJson(), gamePlayInfo.maxWordSelectionTime)
   }
 
   private scheduleTask(taskType: TaskType, payload: string, taskDelayInSeconds: number): Promise<string> {
