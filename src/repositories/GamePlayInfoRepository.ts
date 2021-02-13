@@ -60,8 +60,8 @@ class GamePlayInfoRepository {
     return this.redisHelper.delete_(gameKey);
   }
 
-  saveGameInfo(gamePlayInfo: GamePlayInfo): Promise<boolean> {
-    return this.redisHelper.setString(gamePlayInfo.gameKey, gamePlayInfo.toJson())
+  saveGameInfo(gamePlayInfo: GamePlayInfo): Promise<GamePlayInfo> {
+    return this.redisHelper.setString(gamePlayInfo.gameKey, gamePlayInfo.toJson()).then(_ => gamePlayInfo)
   }
 
   addParticipant(gameKey: string, socketId: string): Promise<void> {
@@ -165,46 +165,46 @@ class GamePlayInfoRepository {
   }
 
   //Not used
-  private assignRoles(gameKey: string): Promise<void> {
-    logger.log(`assignRoles for game ${gameKey}`);
-    return new Promise((resolve, reject) => {
-      this.getGameInfoOrThrow(gameKey)
-        .then((gamePlayInfo) => {
-          if (gamePlayInfo.participants.length == 0) throw new Error(`No participant available on game ${gameKey}`);
+  // private assignRoles(gameKey: string): Promise<void> {
+  //   logger.log(`assignRoles for game ${gameKey}`);
+  //   return new Promise((resolve, reject) => {
+  //     this.getGameInfoOrThrow(gameKey)
+  //       .then((gamePlayInfo) => {
+  //         if (gamePlayInfo.participants.length == 0) throw new Error(`No participant available on game ${gameKey}`);
 
-          let nextDrawingParticipantPos;
-          if (gamePlayInfo.currentDrawingParticipant == null) {
-            nextDrawingParticipantPos = 0;
-          } else {
-            nextDrawingParticipantPos = gamePlayInfo.findNextParticipantIndex(
-              gamePlayInfo.currentDrawingParticipant.socketId
-            );
-            if (nextDrawingParticipantPos == 0) {
-              gamePlayInfo.currentRound++; // One round trip is completed
-            }
-          }
-          const nextDrawingParticipant = gamePlayInfo.participants[nextDrawingParticipantPos];
-          gamePlayInfo.currentDrawingParticipant = nextDrawingParticipant;
+  //         let nextDrawingParticipantPos;
+  //         if (gamePlayInfo.currentDrawingParticipant == null) {
+  //           nextDrawingParticipantPos = 0;
+  //         } else {
+  //           nextDrawingParticipantPos = gamePlayInfo.findNextParticipantIndex(
+  //             gamePlayInfo.currentDrawingParticipant.socketId
+  //           );
+  //           if (nextDrawingParticipantPos == 0) {
+  //             gamePlayInfo.currentRound++; // One round trip is completed
+  //           }
+  //         }
+  //         const nextDrawingParticipant = gamePlayInfo.participants[nextDrawingParticipantPos];
+  //         gamePlayInfo.currentDrawingParticipant = nextDrawingParticipant;
 
-          gamePlayInfo.participants.forEach((participant) => {
-            if (participant.socketId == nextDrawingParticipant.socketId)
-              participant.gameScreenState = GameScreen.State.SELECT_DRAWING_WORD;
-            else participant.gameScreenState = GameScreen.State.WAIT_FOR_DRAWING_WORD;
-            logger.logInfo(
-              GamePlayInfoRepository.TAG,
-              `Assigning ${participant.socketId} with ${participant.gameScreenState}`
-            );
-          });
+  //         gamePlayInfo.participants.forEach((participant) => {
+  //           if (participant.socketId == nextDrawingParticipant.socketId)
+  //             participant.gameScreenState = GameScreen.State.SELECT_DRAWING_WORD;
+  //           else participant.gameScreenState = GameScreen.State.WAIT_FOR_DRAWING_WORD;
+  //           logger.logInfo(
+  //             GamePlayInfoRepository.TAG,
+  //             `Assigning ${participant.socketId} with ${participant.gameScreenState}`
+  //           );
+  //         });
 
-          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
-        })
-        .then((_) => {
-          logger.logInfo(GamePlayInfoRepository.TAG, "Roles re-assigned");
-          resolve();
-        })
-        .catch((err) => reject(err));
-    });
-  }
+  //         return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
+  //       })
+  //       .then((_) => {
+  //         logger.logInfo(GamePlayInfoRepository.TAG, "Roles re-assigned");
+  //         resolve();
+  //       })
+  //       .catch((err) => reject(err));
+  //   });
+  // }
 
   getGameScreenState(gameKey: string, socketId: string): Promise<GameScreen> {
     return new Promise((resolve: (gamePlayInfo: GameScreen) => void, reject) => {

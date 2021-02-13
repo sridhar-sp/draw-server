@@ -98,8 +98,17 @@ class GameEventHandlerService {
 
   async endCurrentDrawingSession(gameKey: string) {
 
-    this.getLeaderBoardPayload(gameKey)
-      .then(leaderBoardPayload => {
+    this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
+      .then(gamePlayInfo => {
+        const drawingParticipant = gamePlayInfo.getDrawingParticipant()
+        if (drawingParticipant != null && gamePlayInfo.getParticipantScoreForCurrentMatch(drawingParticipant.socketId) == -1) {
+          gamePlayInfo.setParticipantScoreForCurrentMatch(drawingParticipant.socketId, 10)//Add the score calc logic later
+          return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+        }
+        return gamePlayInfo
+      })
+      .then(gamePlayInfo => {
+        const leaderBoardPayload = this.formLeaderBoardPayloadFrom(gamePlayInfo)
         this.socketServer.in(gameKey).emit(SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
           SuccessResponse.createSuccessResponse(GameScreenStatePayload.createLeaderBoard(leaderBoardPayload)))
 
@@ -109,6 +118,20 @@ class GameEventHandlerService {
       })
       .catch(e => logger.logError(GameEventHandlerService.TAG, e))
 
+  }
+
+  private updateDrawingParticipantScoreIfRequired(gamePlayInfo: GamePlayInfo): Promise<GamePlayInfo> {
+    return new Promise((resolve: (gamePlayInfo: GamePlayInfo) => void, reject: (e: Error) => void) => {
+      const drawingParticipant = gamePlayInfo.getDrawingParticipant()
+      if (drawingParticipant == null) {
+        logger.logWarn(GameEventHandlerService.TAG, `updateDrawingParticipantScoreIfRequired : no drawing participant for game key ${gamePlayInfo.gameKey} `)
+        resolve(gamePlayInfo)
+        return
+      }
+
+      // if(drawingParticipant.getScore())
+
+    });
   }
 
   async rotateUserGameScreenState(gameKey: string) {
@@ -125,12 +148,12 @@ class GameEventHandlerService {
           gamePlayInfo.incrementCurrentRound()
         }
 
-        return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo).then(_ => gamePlayInfo)
+        return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
       })
       .then(gamePlayInfo => {
         gamePlayInfo.participants.forEach(participant => {
 
-          const drawingParticipant = gamePlayInfo.findDrawingParticipant();
+          const drawingParticipant = gamePlayInfo.getDrawingParticipant()
           if (null == drawingParticipant)
             throw new Error(`No drawing participant found after rotating roles`);
 
@@ -173,7 +196,7 @@ class GameEventHandlerService {
               GameScreenStatePayload.create(gameScreenState, DrawGameScreenStateData.create(gamePlayInfo.word).toJson())
             );
           case GameScreen.State.WAIT_FOR_DRAWING_WORD:
-            const drawingParticipant = gamePlayInfo.findDrawingParticipant();
+            const drawingParticipant = gamePlayInfo.getDrawingParticipant()
             if (null == drawingParticipant)
               throw new Error(
                 `No participant is selecting a word to draw but participant ${thisParticipant.socketId} is in waiting state`
@@ -357,18 +380,18 @@ class GameEventHandlerService {
     if (gamePlayInfo.participants.length == 0) throw new Error(`No participant available on game ${gamePlayInfo.gameKey}`);
 
     let nextDrawingParticipantPos;
-    if (gamePlayInfo.currentDrawingParticipant == null) {
+    if (gamePlayInfo.getDrawingParticipant() == null) {
       nextDrawingParticipantPos = 0;
     } else {
       nextDrawingParticipantPos = gamePlayInfo.findNextParticipantIndex(
-        gamePlayInfo.currentDrawingParticipant.socketId
+        gamePlayInfo.getDrawingParticipant()!!.socketId
       );
       // if (nextDrawingParticipantPos == 0) {
       //   gamePlayInfo.currentRound++; // One round trip is completed
       // }
     }
     const nextDrawingParticipant = gamePlayInfo.participants[nextDrawingParticipantPos];
-    gamePlayInfo.currentDrawingParticipant = nextDrawingParticipant;
+    gamePlayInfo.setDrawingParticipant(nextDrawingParticipant)
 
     gamePlayInfo.participants.forEach((participant) => {
       if (participant.socketId == nextDrawingParticipant.socketId)
@@ -394,6 +417,7 @@ class GameEventHandlerService {
     return this.taskScheduler.scheduleTask(taskDelayInSeconds * 1000, Task.create(taskType, taskDelayInSeconds + 10, payload))
   }
 
+  //Not used
   private getLeaderBoardPayload(gameKey: string): Promise<Array<UserScore>> {
     return new Promise((resolve: (payload: Array<UserScore>) => void, reject: (e: Error) => void) => {
       this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)

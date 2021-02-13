@@ -40,7 +40,7 @@ class GamePlayInfo {
   public currentRound: number;
   public maxWordSelectionTime: number
   public maxDrawingTime: number
-  public currentDrawingParticipant: Participant | null;
+  private currentDrawingParticipant: Participant | null;
   public participants: Participant[];
   public autoSelectWordTaskId: string | null;
   public endDrawingSessionTaskId: string | null;
@@ -133,14 +133,12 @@ class GamePlayInfo {
     return (currentPlayerIndex + 1) % this.participants.length;
   }
 
-  findDrawingParticipant(): Participant | null {
-    if (!this.participants || this.participants.length == 0) return null;
+  setDrawingParticipant(drawingParticipant: Participant) {
+    this.currentDrawingParticipant = drawingParticipant
+  }
 
-    for (let index = 0; index < this.participants.length; index++) {
-      const participant = this.participants[index];
-      if (participant.gameScreenState == GameScreen.State.SELECT_DRAWING_WORD) return participant;
-    }
-    return null;
+  getDrawingParticipant(): Participant | null {
+    return this.currentDrawingParticipant
   }
 
   setAutoSelectWordTaskId(taskId: string) {
@@ -184,7 +182,7 @@ class GamePlayInfo {
       logger.logInfo("GamePlayInfo", `getParticipantScoreForCurrentMatch no participant found for ${participantSocketId}`)
       return -1
     }
-    participant.setScore(this.currentRound, this.matchIndex, score)
+    participant.setScore(this.currentRound, this.matchIndex, Math.round(score))
   }
 
   isAllParticipantGuessedTheWordInCurrentRound(): boolean {
