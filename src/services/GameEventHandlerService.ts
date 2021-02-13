@@ -24,6 +24,7 @@ import GamePlayInfo from "../models/GamePlayInfo";
 import AutoEndDrawingSessionTaskRequest from "../models/AutoEndDrawingSessionTaskRequest";
 import DismissLeaderBoardTaskRequest from "../models/DismissLeaderBoardTaskRequest";
 import AnswerEventResponse from "../models/AnswerEventResponse";
+import UserScore from "../models/UserScore";
 
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
@@ -96,11 +97,18 @@ class GameEventHandlerService {
   }
 
   async endCurrentDrawingSession(gameKey: string) {
-    this.socketServer.in(gameKey).emit(SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
-      SuccessResponse.createSuccessResponse(GameScreenStatePayload.createLeaderBoard()))
 
-    this.scheduleTask(TaskType.DISMISS_LEADER_BOARD, DismissLeaderBoardTaskRequest.create(gameKey).toJson()
-      , GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
+    this.getLeaderBoardPayload(gameKey)
+      .then(leaderBoardPayload => {
+        this.socketServer.in(gameKey).emit(SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
+          SuccessResponse.createSuccessResponse(GameScreenStatePayload.createLeaderBoard(leaderBoardPayload)))
+
+
+        this.scheduleTask(TaskType.DISMISS_LEADER_BOARD, DismissLeaderBoardTaskRequest.create(gameKey).toJson()
+          , GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
+      })
+      .catch(e => logger.logError(GameEventHandlerService.TAG, e))
+
   }
 
   async rotateUserGameScreenState(gameKey: string) {
@@ -181,7 +189,9 @@ class GameEventHandlerService {
           case GameScreen.State.VIEW:
             return SuccessResponse.createSuccessResponse(GameScreenStatePayload.create(gameScreenState, ""));
           case GameScreen.State.LEADER_BOARD:
-            return SuccessResponse.createSuccessResponse(GameScreenStatePayload.create(gameScreenState, ""));
+            return SuccessResponse.createSuccessResponse(
+              GameScreenStatePayload.createLeaderBoard(this.formLeaderBoardPayloadFrom(gamePlayInfo))
+            );
         }
       })
       .then((gameScreenStateResponse) =>
@@ -382,6 +392,39 @@ class GameEventHandlerService {
 
   private scheduleTask(taskType: TaskType, payload: string, taskDelayInSeconds: number): Promise<string> {
     return this.taskScheduler.scheduleTask(taskDelayInSeconds * 1000, Task.create(taskType, taskDelayInSeconds + 10, payload))
+  }
+
+  private getLeaderBoardPayload(gameKey: string): Promise<Array<UserScore>> {
+    return new Promise((resolve: (payload: Array<UserScore>) => void, reject: (e: Error) => void) => {
+      this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
+        .then(gamePlayInfo => resolve(this.formLeaderBoardPayloadFrom(gamePlayInfo)))
+        .catch(e => logger.logError(GameEventHandlerService.TAG, e))
+    })
+  }
+
+  private formLeaderBoardPayloadFrom(gamePlayInfo: GamePlayInfo) {
+    let leaderBoardPayload: Array<UserScore> = []
+
+    const participantsSize = gamePlayInfo.participants.length
+    if (participantsSize == 0) {
+      "No participants, can't form leader board"
+      return leaderBoardPayload
+    }
+
+    for (let i = 0; i < participantsSize; i++) {
+      const participant = gamePlayInfo.participants[i]
+      const participantSocket = this.getSocketForId(participant.socketId)
+      if (null != participantSocket) {
+        leaderBoardPayload.push(UserScore.create(participant.getTotalScore(), participantSocket.getUserRecord()))
+      }
+    }
+
+    leaderBoardPayload.sort((i1, i2) => i2.score - i1.score)
+    return leaderBoardPayload
+  }
+
+  private getSocketForId(socketId: string): Socket | null {
+    return this.socketServer.sockets.sockets[socketId]
   }
 }
 

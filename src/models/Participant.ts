@@ -66,6 +66,23 @@ class Participant {
       this.score[roundKey][matchKey] = score
     }
   }
+
+  getTotalScore(): number {
+
+    if (this.score == null)
+      return -1
+
+    let totalScore = 0
+
+    for (let roundKey in this.score) {
+      const roundLevelScore = this.score[roundKey]
+      for (let matchKey in roundLevelScore) {
+        totalScore += roundLevelScore[matchKey]
+      }
+    }
+
+    return totalScore
+  }
 }
 
 export default Participant;
