@@ -2,7 +2,7 @@ import GameScreen from "./GameScreen";
 
 class Participant {
   socketId: string;
-  gameScreenState: GameScreen;
+  private gameScreenState: GameScreen;
   score: any | null
 
   constructor(socketId: string, gameScreenState: GameScreen, score: any) {
@@ -32,7 +32,11 @@ class Participant {
   }
 
   setGameScreenState(gameScreenState: GameScreen) {
-    this.gameScreenState = gameScreenState;
+    this.gameScreenState = gameScreenState
+  }
+
+  getGameScreenState(): GameScreen {
+    return this.gameScreenState
   }
 
   getScore(round: number, match: number): number {

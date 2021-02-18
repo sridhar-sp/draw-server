@@ -141,9 +141,9 @@ class GameEventHandlerService {
       .then(gamePlayInfo => {
 
         logger.logInfo(GameEventHandlerService.TAG, `rotateUserGameScreenState gamePlayInfo.participants[0].gameScreenState 
-        ${gamePlayInfo.participants[0].gameScreenState}`)
+        ${gamePlayInfo.participants[0].getGameScreenState()}`)
 
-        if (gamePlayInfo.participants[0].gameScreenState == GameScreen.State.SELECT_DRAWING_WORD) {
+        if (gamePlayInfo.participants[0].getGameScreenState() == GameScreen.State.SELECT_DRAWING_WORD) {
           logger.logInfo(GameEventHandlerService.TAG, `rotateUserGameScreenState one round trip completed`)
           gamePlayInfo.incrementCurrentRound()
         }
@@ -183,7 +183,7 @@ class GameEventHandlerService {
         const thisParticipant = gamePlayInfo.findParticipant(socket.id);
         if (thisParticipant == null) throw new Error(`Participant ${socket.id} is not belong to the game ${gameKey}`);
 
-        const gameScreenState = thisParticipant.gameScreenState;
+        const gameScreenState = thisParticipant.getGameScreenState();
         switch (gameScreenState) {
           case GameScreen.State.NONE:
             return SuccessResponse.createSuccessResponse(GameScreenStatePayload.create(gameScreenState, ""));
@@ -395,9 +395,9 @@ class GameEventHandlerService {
 
     gamePlayInfo.participants.forEach((participant) => {
       if (participant.socketId == nextDrawingParticipant.socketId)
-        participant.gameScreenState = GameScreen.State.SELECT_DRAWING_WORD;
-      else participant.gameScreenState = GameScreen.State.WAIT_FOR_DRAWING_WORD;
-      logger.logInfo(GameEventHandlerService.TAG, `Assigning ${participant.socketId} with ${participant.gameScreenState}`);
+        participant.setGameScreenState(GameScreen.State.SELECT_DRAWING_WORD)
+      else participant.setGameScreenState(GameScreen.State.WAIT_FOR_DRAWING_WORD)
+      logger.logInfo(GameEventHandlerService.TAG, `Assigning ${participant.socketId} with ${participant.getGameScreenState()}`);
     });
 
     return Promise.resolve(gamePlayInfo);

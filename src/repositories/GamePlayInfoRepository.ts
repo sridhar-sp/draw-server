@@ -219,7 +219,7 @@ class GamePlayInfoRepository {
             resolve(GameScreen.State.NONE);
             return;
           }
-          resolve(gamePlayInfo.participants[participantIndex].gameScreenState);
+          resolve(gamePlayInfo.participants[participantIndex].getGameScreenState());
         })
         .catch((err) => {
           reject(err);
