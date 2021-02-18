@@ -22,7 +22,7 @@ class GamePlayInfo {
   }
 
   static create(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number) {
-    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, 1, 0, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null, 1);
+    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, noOfRounds, 1, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null, 1);
   }
 
   public static fromJson(json: string): GamePlayInfo | null {
@@ -37,7 +37,7 @@ class GamePlayInfo {
   public gameKey: string;
   public gamePlayStatus: GamePlayStatus;
   public noOfRounds: number;
-  public currentRound: number;
+  private currentRound: number;
   public maxWordSelectionTime: number
   public maxDrawingTime: number
   private currentDrawingParticipant: Participant | null;
@@ -197,6 +197,13 @@ class GamePlayInfo {
       }
     })
     return isAllParticipantGuessedCorrectly;
+  }
+
+  getTTLInSeconds(): number {
+    const minTTLInSeconds = 60 * 60//1 Hour
+    const ttlInSeconds = minTTLInSeconds + this.maxDrawingTime * this.maxWordSelectionTime * this.participants.length * Math.max(this.noOfRounds - this.currentRound, 0)
+    logger.logDebug("GamePlayInfo", `getTTLInSeconds ${ttlInSeconds}`)
+    return ttlInSeconds
   }
 }
 

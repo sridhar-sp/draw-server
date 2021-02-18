@@ -21,13 +21,8 @@ class GamePlayInfoRepository {
   }
 
   createGameInfo(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number): Promise<GamePlayInfo> {
-    return new Promise((resolve: (gamePlayInfo: GamePlayInfo) => void, reject) => {
-      const gamePlayInfo = GamePlayInfo.create(gameKey, noOfRounds, maxWordSelectionTime, maxDrawingTime)
-      this.redisHelper
-        .setString(gameKey, gamePlayInfo.toJson())
-        .then(_ => resolve(gamePlayInfo))
-        .catch(error => reject(error))
-    })
+    const gamePlayInfo = GamePlayInfo.create(gameKey, noOfRounds, maxWordSelectionTime, maxDrawingTime)
+    return this.saveGameInfo(gamePlayInfo)
   }
 
   private getGameInfo(gameKey: string): Promise<GamePlayInfo | null> {
@@ -61,7 +56,9 @@ class GamePlayInfoRepository {
   }
 
   saveGameInfo(gamePlayInfo: GamePlayInfo): Promise<GamePlayInfo> {
-    return this.redisHelper.setString(gamePlayInfo.gameKey, gamePlayInfo.toJson()).then(_ => gamePlayInfo)
+    return this.redisHelper.setString(gamePlayInfo.gameKey, gamePlayInfo.toJson())
+      .then(_ => this.redisHelper.expire(gamePlayInfo.gameKey, gamePlayInfo.getTTLInSeconds()))
+      .then(_ => gamePlayInfo)
   }
 
   addParticipant(gameKey: string, socketId: string): Promise<void> {

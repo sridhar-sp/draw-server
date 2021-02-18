@@ -89,7 +89,7 @@ class GameEventHandlerService {
       .then(gamePlayInfo => this.rotateRoles(gamePlayInfo))
       .then(gamePlayInfo => {
         gamePlayInfo.gamePlayStatus = GamePlayStatus.STARTED;
-        gamePlayInfo.currentRound = 1;
+        // gamePlayInfo.currentRound = 1;
         return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
       })
       .then(_ => this.socketServer.in(gameKey).emit(SocketEvents.Game.START_GAME))
