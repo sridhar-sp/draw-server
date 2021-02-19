@@ -2,6 +2,7 @@ import { request } from "express";
 import GameScreen from "./GameScreen";
 import UserScore from "./UserScore";
 import SimpleUserRecord from "./SimpleUserRecord";
+import LeaderBoardData from "./LeaderBoardData";
 
 class GameScreenStatePayload {
   public gameScreenState: GameScreen;
@@ -19,8 +20,8 @@ class GameScreenStatePayload {
     return new GameScreenStatePayload(GameScreen.State.SELECT_DRAWING_WORD, "");
   }
 
-  static createLeaderBoard(payload: Array<UserScore>): GameScreenStatePayload {
-    return new GameScreenStatePayload(GameScreen.State.LEADER_BOARD, JSON.stringify(payload));
+  static createLeaderBoard(leaderBoardData: LeaderBoardData): GameScreenStatePayload {
+    return new GameScreenStatePayload(GameScreen.State.LEADER_BOARD, leaderBoardData.toJson());
   }
 
   constructor(gameScreenState: GameScreen, screenData: string) {

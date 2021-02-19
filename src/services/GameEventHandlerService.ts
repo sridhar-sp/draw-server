@@ -25,6 +25,7 @@ import AutoEndDrawingSessionTaskRequest from "../models/AutoEndDrawingSessionTas
 import DismissLeaderBoardTaskRequest from "../models/DismissLeaderBoardTaskRequest";
 import AnswerEventResponse from "../models/AnswerEventResponse";
 import UserScore from "../models/UserScore";
+import LeaderBoardData from "../models/LeaderBoardData";
 
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
@@ -100,21 +101,39 @@ class GameEventHandlerService {
 
     this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
       .then(gamePlayInfo => {
+        let isGamePlayInfoUpdated = false
         const drawingParticipant = gamePlayInfo.getDrawingParticipant()
+
+        const drawingParticipantSocketId = drawingParticipant != null ? drawingParticipant.socketId : -1
+
+        gamePlayInfo.participants.forEach(participant => {
+          if (participant.socketId != drawingParticipantSocketId && gamePlayInfo.getParticipantScoreForCurrentMatch(participant.socketId) == -1) {
+            gamePlayInfo.setParticipantScoreForCurrentMatch(participant.socketId, 0)
+            isGamePlayInfoUpdated = true
+          }
+        })
+
+        //if drawing participant disconnect, it will cause drawing session to end during those times then simply ignore and continue. 
         if (drawingParticipant != null && gamePlayInfo.getParticipantScoreForCurrentMatch(drawingParticipant.socketId) == -1) {
-          gamePlayInfo.setParticipantScoreForCurrentMatch(drawingParticipant.socketId, 10)//Add the score calc logic later
-          return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+          gamePlayInfo.setDrawingParticipantScoreForCurrentMatch(10)//Add the score calc logic later
+          isGamePlayInfoUpdated = true
         }
+
+        if (isGamePlayInfoUpdated)
+          return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
         return gamePlayInfo
       })
       .then(gamePlayInfo => {
-        const leaderBoardPayload = this.formLeaderBoardPayloadFrom(gamePlayInfo)
+        const leaderBoardData = this.formLeaderBoardPayloadFrom(gamePlayInfo)
         this.socketServer.in(gameKey).emit(SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
-          SuccessResponse.createSuccessResponse(GameScreenStatePayload.createLeaderBoard(leaderBoardPayload)))
+          SuccessResponse.createSuccessResponse(GameScreenStatePayload.createLeaderBoard(leaderBoardData)))
 
+        if (!leaderBoardData.isGameCompleted()) {
+          this.scheduleTask(TaskType.DISMISS_LEADER_BOARD,
+            DismissLeaderBoardTaskRequest.create(gameKey).toJson(),
+            GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
+        }
 
-        this.scheduleTask(TaskType.DISMISS_LEADER_BOARD, DismissLeaderBoardTaskRequest.create(gameKey).toJson()
-          , GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
       })
       .catch(e => logger.logError(GameEventHandlerService.TAG, e))
 
@@ -417,22 +436,13 @@ class GameEventHandlerService {
     return this.taskScheduler.scheduleTask(taskDelayInSeconds * 1000, Task.create(taskType, taskDelayInSeconds + 10, payload))
   }
 
-  //Not used
-  private getLeaderBoardPayload(gameKey: string): Promise<Array<UserScore>> {
-    return new Promise((resolve: (payload: Array<UserScore>) => void, reject: (e: Error) => void) => {
-      this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
-        .then(gamePlayInfo => resolve(this.formLeaderBoardPayloadFrom(gamePlayInfo)))
-        .catch(e => logger.logError(GameEventHandlerService.TAG, e))
-    })
-  }
-
-  private formLeaderBoardPayloadFrom(gamePlayInfo: GamePlayInfo) {
+  private formLeaderBoardPayloadFrom(gamePlayInfo: GamePlayInfo): LeaderBoardData {
     let leaderBoardPayload: Array<UserScore> = []
 
     const participantsSize = gamePlayInfo.participants.length
     if (participantsSize == 0) {
-      "No participants, can't form leader board"
-      return leaderBoardPayload
+      logger.logWarn(GameEventHandlerService.TAG, "No participants, can't form leader board")
+      return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.isAllRoundCompleted())
     }
 
     for (let i = 0; i < participantsSize; i++) {
@@ -444,7 +454,7 @@ class GameEventHandlerService {
     }
 
     leaderBoardPayload.sort((i1, i2) => i2.score - i1.score)
-    return leaderBoardPayload
+    return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.isAllRoundCompleted())
   }
 
   private getSocketForId(socketId: string): Socket | null {

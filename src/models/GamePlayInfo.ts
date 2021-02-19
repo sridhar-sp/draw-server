@@ -1,9 +1,9 @@
 import logger from "../logger/logger";
 import Participant from "./Participant";
 import GamePlayStatus from "./GamePlayStatus";
-import GameScreen from "./GameScreen";
 
 class GamePlayInfo {
+
   static createCopy(copyObj: GamePlayInfo): GamePlayInfo {
     return new GamePlayInfo(
       copyObj.gameKey,
@@ -204,6 +204,10 @@ class GamePlayInfo {
     const ttlInSeconds = minTTLInSeconds + this.maxDrawingTime * this.maxWordSelectionTime * this.participants.length * Math.max(this.noOfRounds - this.currentRound, 0)
     logger.logDebug("GamePlayInfo", `getTTLInSeconds ${ttlInSeconds}`)
     return ttlInSeconds
+  }
+
+  isAllRoundCompleted(): Boolean {
+    return this.currentRound >= this.noOfRounds && this.isAllParticipantGuessedTheWordInCurrentRound()
   }
 }
 
