@@ -101,26 +101,14 @@ class GameEventHandlerService {
 
     this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
       .then(gamePlayInfo => {
-        let isGamePlayInfoUpdated = false
         const drawingParticipant = gamePlayInfo.getDrawingParticipant()
-
-        const drawingParticipantSocketId = drawingParticipant != null ? drawingParticipant.socketId : -1
-
-        gamePlayInfo.participants.forEach(participant => {
-          if (participant.socketId != drawingParticipantSocketId && gamePlayInfo.getParticipantScoreForCurrentMatch(participant.socketId) == -1) {
-            gamePlayInfo.setParticipantScoreForCurrentMatch(participant.socketId, 0)
-            isGamePlayInfoUpdated = true
-          }
-        })
 
         //if drawing participant disconnect, it will cause drawing session to end during those times then simply ignore and continue. 
         if (drawingParticipant != null && gamePlayInfo.getParticipantScoreForCurrentMatch(drawingParticipant.socketId) == -1) {
           gamePlayInfo.setDrawingParticipantScoreForCurrentMatch(10)//Add the score calc logic later
-          isGamePlayInfoUpdated = true
+          return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
         }
 
-        if (isGamePlayInfoUpdated)
-          return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
         return gamePlayInfo
       })
       .then(gamePlayInfo => {
@@ -449,7 +437,7 @@ class GameEventHandlerService {
       const participant = gamePlayInfo.participants[i]
       const participantSocket = this.getSocketForId(participant.socketId)
       if (null != participantSocket) {
-        leaderBoardPayload.push(UserScore.create(participant.getTotalScore(), participantSocket.getUserRecord()))
+        leaderBoardPayload.push(UserScore.create(Math.max(participant.getTotalScore(), 0), participantSocket.getUserRecord()))
       }
     }
 
