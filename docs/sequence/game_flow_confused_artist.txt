@@ -9,48 +9,57 @@ p1 --> server : connect
 p2 --> server : connect
 p1 --> server : create game
 p2 --> server : join game
-p1 --> server : start game
-server -> db : update game records
+p1 --> server : request to start game
 server -> db : assign roles
-server -> scheduler : schedule task to auto select drawing word (w1)
-#note right of scheduler : schedule task to\nforce select the word\nafter 'x' seconds
-server -> db : map & persist 'w1' task id with game id 
-server -> p1 : game ready
-server -> p2 : game ready
+server -> db : update game status as started
+server -> p1 : start game
+server -> p2 : start game
 p1 --> server : get game state
 p2 --> server : get game state
-server -> p1 : user role as 'drawer'
-server -> p2 : user role as 'viewer'
+server -> p1 : game state as 'select word'
+server -> p2 : game state as 'waiting'
 p1 --> server : get list of words
+server -> scheduler : schedule task to auto select drawing word(w1) 
+server -> db : update game play info with 'w1' task id
+server -> p1 : list of words
 note left of db : Participant didn't select any word
 scheduler -> server : auto select a word (w1 task kicks-in)
 
-server -> db : map & persist selected word with game id
-server -> db : invalidate 'w1' task
-server -> p1 : start drawing
-server -> scheduler : schedule task to auto end current drawing session (d1)
-server -> p2 : hint about the word
+
+
+server -> scheduler : schedule task to auto end this new drawing session (d1)
+server -> p1 : game state as 'drawer'
+server -> p2 : game state as 'view' with hint
+
 p2 --> server : answer
 server -> p2 : wrong answer
 p2 --> server : answer
 server -> p2 : correct answer
-server -> db : invalidate 'd1' task if all participant answered correctly
-server -> p1 : show score board
-server -> p2 : show score board
+server -> db : Update participant score
+server -> scheduler : invalidate 'd1' task and update drawing participant score\n if all participant answered correctly
+note left of db : All participant answerd correctly
+server -> scheduler : game is not completed yet,\nso schdule task to dismiss leader board(l1)
+server -> p1 : game state as leader board
+server -> p2 : game state as leader board
+scheduler -> server : dismiss leader board(l1)
 server -> db : assign roles
-server -> scheduler : schedule task to auto select drawing word (w2)
-server -> db : map & persist 'w2' task id with game id 
-server -> p1 : user role as 'viewer'
-server -> p2 : user role as 'drawer'
+server -> db : increment round number if all user completed a round
+server -> p1 : game state as 'waiting'
+server -> p2 : game state as 'select word'
 p2 --> server : get list of words
+server -> scheduler : schedule task to auto select drawing word (w2)
+server -> db : update game play info with 'w2' task id
+server -> p2 : list of words
 p2 --> server : select a word
-server -> db : map & persist selected word with game id
-server -> db : invalidate 'w2' task
-server -> p2 : start drawing
-server -> scheduler : schedule task to auto end current drawing session (d2)
-server -> p1 : hint about the word
+server -> scheduler : invalidate 'w2' task
+server -> scheduler : schedule task to auto end this drawing session (d2)
+server -> p1 : game state as 'viewer' with hint
+server -> p2 : game state as 'drawer'
+
 p1 --> server : answer
 server -> p1 : correct answer
-server -> db : invalidate 'd2' task if all participant answered correctly
+server -> db : update participant score
+server -> scheduler : invalidate 'd2' task and update drawing participant score\n if all participant answered correctly
+note left of db : All participant answerd correctly,\nand game is completed
 server -> p1 : show final score board
 server -> p2 : show final score board
