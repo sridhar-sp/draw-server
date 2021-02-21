@@ -219,11 +219,18 @@ class GameEventHandlerService {
 
   async handleFetchWordList(socket: Socket) {
     const gameKey = socket.getGameKey();
-    logger.logInfo(GameEventHandlerService.TAG, `REQUEST_LIST_OF_WORD for game = ${gameKey}`);
+
     const questions = this.questionRepository.getRandomQuestions(5);
-    this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
-      .then(gamePlayInfo => this.scheduleAutoSelectWordTask(gamePlayInfo, questions[0], socket.id))
-      .then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.AUTO_SELECT_WORD, taskId))
+
+    this.gamePlayInfoRepository
+      .getGameInfoOrThrow(gameKey)
+      .then(gamePlayInfo => {
+        this.scheduleAutoSelectWordTask(gamePlayInfo, questions[0], socket.id)
+          .then(taskId => {
+            gamePlayInfo.setAutoSelectWordTaskId(taskId)
+            return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+          })
+      })
       .then(() => {
         socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
       })

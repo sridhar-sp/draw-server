@@ -87,22 +87,6 @@ class GamePlayInfoRepository {
         .catch((err) => reject(err));
     });
   }
-
-  //Deprecated
-  updateTaskId(gameKey: string, taskType: TaskType, taskId: string): Promise<void> {
-    logger.log(`update ${taskType} id for game ${gameKey} with ${taskId} `);
-    return new Promise((resolve, reject) => {
-      this.getGameInfoOrThrow(gameKey)
-        .then((gamePlayInfo) => {
-          if (taskType == TaskType.AUTO_SELECT_WORD) gamePlayInfo.setAutoSelectWordTaskId(taskId);
-          else if (taskType == TaskType.END_DRAWING_SESSION) gamePlayInfo.setEndDrawingSessionTaskId(taskId);
-
-          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
-        })
-        .then((_) => resolve())
-        .catch((err) => reject(err));
-    });
-  }
 }
 
 export default GamePlayInfoRepository;
