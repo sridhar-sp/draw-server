@@ -2,7 +2,6 @@ import "./Extension";
 import SocketEvents from "./SocketEvents";
 import socketIOAuthMiddleware from "../middlewares/socketAccessTokenAuthMiddleware";
 import gameKeyVerifierSocketMiddleware from "../middlewares/gameKeyVerifierSocketMiddleware"
-import RoomEventHandlerService from "../services/RoomEventHandlerService";
 import GameEventHandlerService from "../services/GameEventHandlerService";
 
 import socketIo from "socket.io";
@@ -27,7 +26,6 @@ class SocketIOServer {
 
   private socketServer: SocketIO.Server;
   private gameEventHandlerService: GameEventHandlerService;
-  private roomEventHandlerService: RoomEventHandlerService;
 
   private taskScheduler: TaskScheduler;
 
@@ -37,7 +35,6 @@ class SocketIOServer {
     const taskRepository: TaskRepository = TaskRepositoryImpl.create(redisHelper);
     this.taskScheduler = TaskSchedulerImpl.create(taskRepository);
 
-    this.roomEventHandlerService = new RoomEventHandlerService(this.socketServer);
     this.gameEventHandlerService = new GameEventHandlerService(this.socketServer, this.taskScheduler);
 
     const autoSelectTaskConsumer = TaskConsumerImpl.create(taskRepository);
@@ -101,17 +98,15 @@ class SocketIOServer {
       });
 
       socket.on("disconnect", () => {
-        this.roomEventHandlerService.handleLeave(socket);
         this.gameEventHandlerService.handleLeave(socket);
       });
 
       socket.on(SocketEvents.Game.LEAVE_GAME, () => {
-        this.roomEventHandlerService.handleLeave(socket);
         this.gameEventHandlerService.handleLeave(socket);
       });
 
       socket.on(SocketEvents.Room.FETCH_USER_RECORDS, (data) => {
-        this.roomEventHandlerService.handleFetchUserRecords(socket);
+        this.gameEventHandlerService.handleFetchUserRecords(socket);
       });
 
       socket.on(SocketEvents.Game.REQUEST_START_GAME, async (data) => {

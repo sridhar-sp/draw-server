@@ -25,6 +25,7 @@ import DismissLeaderBoardTaskRequest from "../models/DismissLeaderBoardTaskReque
 import AnswerEventResponse from "../models/AnswerEventResponse";
 import UserScore from "../models/UserScore";
 import LeaderBoardData from "../models/LeaderBoardData";
+import SocketUtils from "../socket/SocketUtils";
 
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
@@ -73,10 +74,23 @@ class GameEventHandlerService {
 
   async handleLeave(socket: Socket) {
     try {
+      socket.leave(socket.getGameKey())
+      socket.to(socket.getGameKey()).emit(SocketEvents.Room.MEMBER_LEFT,
+        SuccessResponse.createSuccessResponse(socket.getUserRecord()))
       await this.gamePlayInfoRepository.removeParticipant(socket.getGameKey(), socket.id);
     } catch (err) {
       logger.log(`Caught error ${err}}`);
     }
+  }
+
+  async handleFetchUserRecords(socket: Socket) {
+    console.log("Fetch user records")
+    SocketUtils.getAllUserRecordFromRoom(this.socketServer, socket.getGameKey())
+      .then(userRecords => {
+        socket.emit(SocketEvents.Room.USER_RECORD_LIST, SuccessResponse.createSuccessResponse(userRecords))
+      }).catch(error => {
+        socket.emit(SocketEvents.Room.USER_RECORD_LIST, ErrorResponse.createErrorResponse(500, error))
+      })
   }
 
   async handleStartGame(socket: Socket) {
