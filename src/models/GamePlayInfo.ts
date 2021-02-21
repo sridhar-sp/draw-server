@@ -1,6 +1,7 @@
 import logger from "../logger/logger";
 import Participant from "./Participant";
 import GamePlayStatus from "./GamePlayStatus";
+import GameScreen from "./GameScreen";
 
 class GamePlayInfo {
 
@@ -35,7 +36,7 @@ class GamePlayInfo {
   }
 
   public gameKey: string;
-  public gamePlayStatus: GamePlayStatus;
+  private gamePlayStatus: GamePlayStatus;
   public noOfRounds: number;
   private currentRound: number;
   public maxWordSelectionTime: number
@@ -133,22 +134,6 @@ class GamePlayInfo {
     return (currentPlayerIndex + 1) % this.participants.length;
   }
 
-  setDrawingParticipant(drawingParticipant: Participant) {
-    this.currentDrawingParticipant = drawingParticipant
-  }
-
-  getDrawingParticipant(): Participant | null {
-    return this.currentDrawingParticipant
-  }
-
-  setAutoSelectWordTaskId(taskId: string) {
-    this.autoSelectWordTaskId = taskId;
-  }
-
-  setEndDrawingSessionTaskId(taskId: string) {
-    this.endDrawingSessionTaskId = taskId;
-  }
-
   incrementCurrentRound() {
     this.currentRound++
     this.matchIndex = 1
@@ -158,6 +143,9 @@ class GamePlayInfo {
     this.matchIndex++
   }
 
+  setAllParticipantGameStateToLeaderBoard() {
+    this.participants.forEach(participant => participant.setGameScreenState(GameScreen.State.LEADER_BOARD))
+  }
 
   getParticipantScoreForCurrentMatch(participantSocketId: string): number {
     const participant = this.findParticipant(participantSocketId)
@@ -176,6 +164,17 @@ class GamePlayInfo {
     this.setParticipantScoreForCurrentMatch(this.currentDrawingParticipant.socketId, score)
   }
 
+  setScoreAsZeroToParticipantsWhoHaveNotGuessedTheWordCorrectly() {
+    const drawingParticipantSocketId = this.currentDrawingParticipant != null ? this.currentDrawingParticipant.socketId : "-1"
+    this.participants
+      .filter(participant => participant.socketId != drawingParticipantSocketId)
+      .forEach(participant => {
+        if (this.getParticipantScoreForCurrentMatch(participant.socketId) == -1) {
+          participant.setScore(this.currentRound, this.matchIndex, 0)
+        }
+      })
+  }
+
   setParticipantScoreForCurrentMatch(participantSocketId: string, score: number) {
     const participant = this.findParticipant(participantSocketId)
     if (participant == null) {
@@ -185,18 +184,35 @@ class GamePlayInfo {
     participant.setScore(this.currentRound, this.matchIndex, Math.round(score))
   }
 
-  isAllParticipantGuessedTheWordInCurrentRound(): boolean {
+  isAllParticipantReceivedTheScoreForCurrentRound(): boolean {
 
-    let isAllParticipantGuessedCorrectly = true
+    let isAllParticipantReceivedScoreForCurrentRound = true
 
     this.participants.forEach(participant => {
-
-      if (this.currentDrawingParticipant?.socketId != participant.socketId && participant.getScore(this.currentRound, this.matchIndex) == -1) {
-        isAllParticipantGuessedCorrectly = false;
+      if (participant.getScore(this.currentRound, this.matchIndex) == -1) {
+        isAllParticipantReceivedScoreForCurrentRound = false;
         return
       }
     })
-    return isAllParticipantGuessedCorrectly;
+    return isAllParticipantReceivedScoreForCurrentRound;
+  }
+
+  isAllViewingParticipantReceivedTheScoreForCurrentRound(): boolean {
+
+    let isAllViewingParticipantReceivedScoreForCurrentRound = true
+
+    const drawingParticipantSocketId = this.currentDrawingParticipant != null ? this.currentDrawingParticipant.socketId : "-1"
+
+    this.participants
+      .filter(participant => participant.socketId != drawingParticipantSocketId)
+      .forEach(participant => {
+        if (participant.getScore(this.currentRound, this.matchIndex) == -1) {
+          isAllViewingParticipantReceivedScoreForCurrentRound = false;
+          return
+        }
+      })
+
+    return isAllViewingParticipantReceivedScoreForCurrentRound;
   }
 
   getTTLInSeconds(): number {
@@ -207,7 +223,40 @@ class GamePlayInfo {
   }
 
   isAllRoundCompleted(): Boolean {
-    return this.currentRound >= this.noOfRounds && this.isAllParticipantGuessedTheWordInCurrentRound()
+    return this.currentRound >= this.noOfRounds && this.isAllParticipantReceivedTheScoreForCurrentRound() && this.matchIndex >= this.participants.length
+  }
+
+  setDrawingParticipant(drawingParticipant: Participant) {
+    this.currentDrawingParticipant = drawingParticipant
+  }
+
+  //Current/Last Drawing participant
+  getDrawingParticipant(): Participant | null {
+    return this.currentDrawingParticipant
+  }
+
+  setAutoSelectWordTaskId(taskId: string) {
+    this.autoSelectWordTaskId = taskId;
+  }
+
+  setEndDrawingSessionTaskId(taskId: string) {
+    this.endDrawingSessionTaskId = taskId;
+  }
+
+  getDrawingWord(): string | null {
+    return this.word
+  }
+
+  setDrawingWord(word: string) {
+    this.word = word
+  }
+
+  getGamePlayStatus(): GamePlayStatus {
+    return this.gamePlayStatus
+  }
+
+  setGamePlayStatus(gamePlayStatus: GamePlayStatus) {
+    this.gamePlayStatus = gamePlayStatus
   }
 }
 

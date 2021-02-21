@@ -25,18 +25,6 @@ class GamePlayInfoRepository {
     return this.saveGameInfo(gamePlayInfo)
   }
 
-  private getGameInfo(gameKey: string): Promise<GamePlayInfo | null> {
-    return new Promise((resolve: (gamePlayInfo: GamePlayInfo | null) => void, reject) => {
-      this.redisHelper
-        .getString(gameKey)
-        .then(async (gamePlayInfoJson) => {
-          if (null == gamePlayInfoJson) resolve(null);
-          else resolve(GamePlayInfo.fromJson(gamePlayInfoJson));
-        })
-        .catch(err => reject(err));
-    });
-  }
-
   getGameInfoOrThrow(gameKey: string): Promise<GamePlayInfo> {
     return new Promise((resolve: (gamePlayInfo: GamePlayInfo) => void, reject) => {
       this.redisHelper
@@ -49,7 +37,6 @@ class GamePlayInfoRepository {
         .catch(err => reject(err));
     });
   }
-
 
   deleteGameInfo(gameKey: string): Promise<boolean> {
     return this.redisHelper.delete_(gameKey);
@@ -101,20 +88,7 @@ class GamePlayInfoRepository {
     });
   }
 
-  updateSelectedWord(gameKey: string, word: string): Promise<GamePlayInfo> {
-    logger.logInfo(GamePlayInfoRepository.TAG, `updateSelectedWord ${word} for game ${gameKey}`);
-    return new Promise((resolve, reject) => {
-      this.getGameInfoOrThrow(gameKey)
-        .then((gamePlayInfo) => {
-          gamePlayInfo.word = word;
-          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson())
-            .then(_ => gamePlayInfo);
-        })
-        .then((gamePlayInfo) => resolve(gamePlayInfo))
-        .catch((err) => reject(err));
-    });
-  }
-
+  //Deprecated
   updateTaskId(gameKey: string, taskType: TaskType, taskId: string): Promise<void> {
     logger.log(`update ${taskType} id for game ${gameKey} with ${taskId} `);
     return new Promise((resolve, reject) => {
@@ -127,100 +101,6 @@ class GamePlayInfoRepository {
         })
         .then((_) => resolve())
         .catch((err) => reject(err));
-    });
-  }
-
-  getTaskId(gameKey: string, taskType: TaskType): Promise<string | null> {
-    return new Promise((resolve: (taskId: string | null) => void, reject: (error: Error) => void) => {
-      this.getGameInfoOrThrow(gameKey)
-        .then((gamePlayInfo) => {
-          if (taskType == TaskType.AUTO_SELECT_WORD) {
-            return gamePlayInfo.autoSelectWordTaskId;
-          } else if (taskType == TaskType.END_DRAWING_SESSION) {
-            return gamePlayInfo.endDrawingSessionTaskId;
-          }
-          throw new Error(`Unknown task type ${taskType}`);
-        })
-        .then((taskId) => resolve(taskId))
-        .catch((error) => reject(error));
-    });
-  }
-
-  getSelectedWord(gameKey: string): Promise<string> {
-    return new Promise((resolve: (word: string) => void, reject: (error: Error) => void) => {
-      this.getGameInfoOrThrow(gameKey)
-        .then((gamePlayInfo) => {
-
-          if (gamePlayInfo.word == null || gamePlayInfo.word.trim() == "")
-            throw new Error(`getSelectedWord :: No word data found in game play record for key: ${gameKey}`);
-
-          return gamePlayInfo.word;
-        })
-        .then((word) => resolve(word))
-        .catch((error) => reject(error));
-    });
-  }
-
-  //Not used
-  // private assignRoles(gameKey: string): Promise<void> {
-  //   logger.log(`assignRoles for game ${gameKey}`);
-  //   return new Promise((resolve, reject) => {
-  //     this.getGameInfoOrThrow(gameKey)
-  //       .then((gamePlayInfo) => {
-  //         if (gamePlayInfo.participants.length == 0) throw new Error(`No participant available on game ${gameKey}`);
-
-  //         let nextDrawingParticipantPos;
-  //         if (gamePlayInfo.currentDrawingParticipant == null) {
-  //           nextDrawingParticipantPos = 0;
-  //         } else {
-  //           nextDrawingParticipantPos = gamePlayInfo.findNextParticipantIndex(
-  //             gamePlayInfo.currentDrawingParticipant.socketId
-  //           );
-  //           if (nextDrawingParticipantPos == 0) {
-  //             gamePlayInfo.currentRound++; // One round trip is completed
-  //           }
-  //         }
-  //         const nextDrawingParticipant = gamePlayInfo.participants[nextDrawingParticipantPos];
-  //         gamePlayInfo.currentDrawingParticipant = nextDrawingParticipant;
-
-  //         gamePlayInfo.participants.forEach((participant) => {
-  //           if (participant.socketId == nextDrawingParticipant.socketId)
-  //             participant.gameScreenState = GameScreen.State.SELECT_DRAWING_WORD;
-  //           else participant.gameScreenState = GameScreen.State.WAIT_FOR_DRAWING_WORD;
-  //           logger.logInfo(
-  //             GamePlayInfoRepository.TAG,
-  //             `Assigning ${participant.socketId} with ${participant.gameScreenState}`
-  //           );
-  //         });
-
-  //         return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
-  //       })
-  //       .then((_) => {
-  //         logger.logInfo(GamePlayInfoRepository.TAG, "Roles re-assigned");
-  //         resolve();
-  //       })
-  //       .catch((err) => reject(err));
-  //   });
-  // }
-
-  getGameScreenState(gameKey: string, socketId: string): Promise<GameScreen> {
-    return new Promise((resolve: (gamePlayInfo: GameScreen) => void, reject) => {
-      this.getGameInfoOrThrow(gameKey)
-        .then(async (gamePlayInfo) => {
-          const participantIndex: number = gamePlayInfo.findParticipantIndex(socketId);
-          if (participantIndex == -1) {
-            logger.logInfo(
-              GamePlayInfoRepository.TAG,
-              `Executing getGameScreenState, no participant record found for ${socketId} hence returning NONE as default`
-            );
-            resolve(GameScreen.State.NONE);
-            return;
-          }
-          resolve(gamePlayInfo.participants[participantIndex].getGameScreenState());
-        })
-        .catch((err) => {
-          reject(err);
-        });
     });
   }
 }

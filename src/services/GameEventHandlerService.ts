@@ -17,7 +17,6 @@ import TaskType from "../scheduler/TaskType";
 import AutoSelectWordTaskRequest from "../models/AutoSelectWordTaskRequest";
 import DrawGameScreenStateData from "../models/DrawGameScreenStateData";
 import QuestionRepository from "../repositories/QuestionRepository";
-import SocketUtils from "../socket/SocketUtils";
 import ViewGameScreenStateData from "../models/ViewGameScreenStateData";
 import SimpleGameInfo from "../models/SimpleGameInfo";
 import GamePlayInfo from "../models/GamePlayInfo";
@@ -89,8 +88,7 @@ class GameEventHandlerService {
     await this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
       .then(gamePlayInfo => this.rotateRoles(gamePlayInfo))
       .then(gamePlayInfo => {
-        gamePlayInfo.gamePlayStatus = GamePlayStatus.STARTED;
-        // gamePlayInfo.currentRound = 1;
+        gamePlayInfo.setGamePlayStatus(GamePlayStatus.STARTED)
         return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
       })
       .then(_ => this.socketServer.in(gameKey).emit(SocketEvents.Game.START_GAME))
@@ -101,44 +99,33 @@ class GameEventHandlerService {
 
     this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
       .then(gamePlayInfo => {
-        const drawingParticipant = gamePlayInfo.getDrawingParticipant()
-
-        //if drawing participant disconnect, it will cause drawing session to end during those times then simply ignore and continue. 
-        if (drawingParticipant != null && gamePlayInfo.getParticipantScoreForCurrentMatch(drawingParticipant.socketId) == -1) {
-          gamePlayInfo.setDrawingParticipantScoreForCurrentMatch(10)//Add the score calc logic later
-          return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
-        }
-
-        return gamePlayInfo
+        gamePlayInfo.setDrawingParticipantScoreForCurrentMatch(10)//Add the score calc logic later
+        gamePlayInfo.setScoreAsZeroToParticipantsWhoHaveNotGuessedTheWordCorrectly()
+        gamePlayInfo.setAllParticipantGameStateToLeaderBoard()
+        return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
       })
       .then(gamePlayInfo => {
         const leaderBoardData = this.formLeaderBoardPayloadFrom(gamePlayInfo)
         this.socketServer.in(gameKey).emit(SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
           SuccessResponse.createSuccessResponse(GameScreenStatePayload.createLeaderBoard(leaderBoardData)))
 
-        if (!leaderBoardData.isGameCompleted()) {
-          this.scheduleTask(TaskType.DISMISS_LEADER_BOARD,
-            DismissLeaderBoardTaskRequest.create(gameKey).toJson(),
-            GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
+        if (leaderBoardData.isGameCompleted()) {
+          gamePlayInfo.setGamePlayStatus(GamePlayStatus.FINISHED)
+          this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+        } else {
+          gamePlayInfo.incrementMatchIndex()
+          this.gamePlayInfoRepository
+            .saveGameInfo(gamePlayInfo)
+            .then(() => {
+              this.scheduleTask(TaskType.DISMISS_LEADER_BOARD,
+                DismissLeaderBoardTaskRequest.create(gameKey).toJson(),
+                GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
+            })
         }
 
       })
       .catch(e => logger.logError(GameEventHandlerService.TAG, e))
 
-  }
-
-  private updateDrawingParticipantScoreIfRequired(gamePlayInfo: GamePlayInfo): Promise<GamePlayInfo> {
-    return new Promise((resolve: (gamePlayInfo: GamePlayInfo) => void, reject: (e: Error) => void) => {
-      const drawingParticipant = gamePlayInfo.getDrawingParticipant()
-      if (drawingParticipant == null) {
-        logger.logWarn(GameEventHandlerService.TAG, `updateDrawingParticipantScoreIfRequired : no drawing participant for game key ${gamePlayInfo.gameKey} `)
-        resolve(gamePlayInfo)
-        return
-      }
-
-      // if(drawingParticipant.getScore())
-
-    });
   }
 
   async rotateUserGameScreenState(gameKey: string) {
@@ -241,21 +228,6 @@ class GameEventHandlerService {
         socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
       })
       .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
-
-    // this.taskScheduler
-    //   .scheduleTask(
-    //     GameEventHandlerService.MAX_TIME_TO_SELECT_A_DRAWING_WORD,
-    //     Task.create(
-    //       TaskType.AUTO_SELECT_WORD,
-    //       GameEventHandlerService.AUTO_SELECT_DRAWING_WORD_TTL_IN_SECONDS,
-    //       AutoSelectWordTaskRequest.create(socket.getGameKey(), socket.id, questions[0]).toJson()
-    //     )
-    //   )
-    //   .then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.AUTO_SELECT_WORD, taskId))
-    //   .then(() => {
-    //     socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
-    //   })
-    //   .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
   }
 
   async handleSelectWord(fromSocket: Socket, word: string) {
@@ -263,25 +235,48 @@ class GameEventHandlerService {
     logger.logInfo(GameEventHandlerService.TAG, `handleSelectWord game = ${gameKey} data = ${word}`);
 
     this.gamePlayInfoRepository
-      .getTaskId(gameKey, TaskType.AUTO_SELECT_WORD)
-      .then((autoSelectWordTaskId) => this.taskScheduler.invalidateTask(autoSelectWordTaskId!!))
-      .then(() => this.gamePlayInfoRepository.updateSelectedWord(gameKey, word))
-      .then(gamePlayInfo => this.scheduleDrawingSessionEndTask(gamePlayInfo))
-      .then((taskId) => this.gamePlayInfoRepository.updateTaskId(gameKey, TaskType.END_DRAWING_SESSION, taskId))
-      .then(() => SocketUtils.getAllSocketFromRoom(this.socketServer, gameKey))
-      .then((socketList: Array<Socket>) => {
+      .getGameInfoOrThrow(gameKey)
+      .then(gamePlayInfo => {
+        gamePlayInfo.setDrawingWord(word)
+
+        const autoSelectWordTaskId = gamePlayInfo.autoSelectWordTaskId
+        if (autoSelectWordTaskId == null) {
+          logger.logWarn(GameEventHandlerService.TAG, "autoSelectWordTaskId is not available")
+          return gamePlayInfo
+        }
+        return this.taskScheduler.invalidateTask(autoSelectWordTaskId).then(() => gamePlayInfo)
+      })
+      .then(gamePlayInfo => {
+        return this.scheduleDrawingSessionEndTask(gamePlayInfo)
+          .then(taskId => {
+            gamePlayInfo.setEndDrawingSessionTaskId(taskId)
+            return gamePlayInfo
+          })
+      })
+      .then(gamePlayInfo => {
+        gamePlayInfo.participants.forEach(participant => {
+          if (participant.socketId == fromSocket.id)
+            participant.setGameScreenState(GameScreen.State.DRAW)
+          else
+            participant.setGameScreenState(GameScreen.State.VIEW)
+        })
+        return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+      })
+      .then(gamePlayInfo => {
         const hint = this.createHint(word)
 
-        socketList.forEach((socket) => {
-          if (socket.id == fromSocket.id) {
-            socket.emit(
+        gamePlayInfo.participants.forEach(participant => {
+          const socket = this.getSocketForId(participant.socketId)
+          if (participant.getGameScreenState() == GameScreen.State.DRAW) {
+            socket?.emit(
               SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
               SuccessResponse.createSuccessResponse(
                 GameScreenStatePayload.create(GameScreen.State.DRAW, DrawGameScreenStateData.create(word).toJson())
               )
             );
-          } else {
-            socket.emit(
+          }
+          else {
+            socket?.emit(
               SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
               SuccessResponse.createSuccessResponse(
                 GameScreenStatePayload.create(
@@ -291,9 +286,9 @@ class GameEventHandlerService {
               )
             );
           }
-        });
+        })
       })
-      .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
+      .catch(error => logger.logError(GameEventHandlerService.TAG, error))
   }
 
   private createHint(word: string): string {
@@ -329,18 +324,12 @@ class GameEventHandlerService {
         if (answer.toLowerCase() == word.toLowerCase()) {
           gamePlayInfo.setParticipantScoreForCurrentMatch(socket.id, word.length)//Dummy score
 
-          const isEveryoneAnswered = gamePlayInfo.isAllParticipantGuessedTheWordInCurrentRound()
-          logger.logInfo(GameEventHandlerService.TAG, `isAllParticipantGuessedTheWordInCurrentRound ${isEveryoneAnswered}`)
-          if (isEveryoneAnswered) {
-            gamePlayInfo.setDrawingParticipantScoreForCurrentMatch(word.length / 2)//Dummy score
-            gamePlayInfo.incrementMatchIndex()
-          }
-
           await this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
 
           socket.emit(SocketEvents.Game.ANSWER_RESPONSE,
             SuccessResponse.createSuccessResponse(AnswerEventResponse.createCorrectAnswerResponse(word)));
 
+          const isEveryoneAnswered = gamePlayInfo.isAllViewingParticipantReceivedTheScoreForCurrentRound()
           if (isEveryoneAnswered) {
             const endDrawingSessionTaskId = gamePlayInfo.endDrawingSessionTaskId
             if (endDrawingSessionTaskId == null)
@@ -359,23 +348,6 @@ class GameEventHandlerService {
       .catch((error) => {
         logger.logError(GameEventHandlerService.TAG, error);
       });
-
-    // this.gamePlayInfoRepository
-    //   .getSelectedWord(socket.getGameKey())
-    //   .then((word) => {
-    //     logger.logInfo(GameEventHandlerService.TAG, `Word = '${word} :: answer'${answer}`);
-    //     let response: AnswerEventResponse
-
-    //     if (answer.toLowerCase() == word.toLowerCase())
-    //       response = AnswerEventResponse.createCorrectAnswerResponse(word)
-    //     else
-    //       response = AnswerEventResponse.createWrongAnswerResponse(answer)
-
-    //     socket.emit(SocketEvents.Game.ANSWER_RESPONSE, SuccessResponse.createSuccessResponse(response));
-    //   })
-    //   .catch((error) => {
-    //     logger.logError(GameEventHandlerService.TAG, error);
-    //   });
   }
 
 
@@ -393,9 +365,6 @@ class GameEventHandlerService {
       nextDrawingParticipantPos = gamePlayInfo.findNextParticipantIndex(
         gamePlayInfo.getDrawingParticipant()!!.socketId
       );
-      // if (nextDrawingParticipantPos == 0) {
-      //   gamePlayInfo.currentRound++; // One round trip is completed
-      // }
     }
     const nextDrawingParticipant = gamePlayInfo.participants[nextDrawingParticipantPos];
     gamePlayInfo.setDrawingParticipant(nextDrawingParticipant)
@@ -430,7 +399,7 @@ class GameEventHandlerService {
     const participantsSize = gamePlayInfo.participants.length
     if (participantsSize == 0) {
       logger.logWarn(GameEventHandlerService.TAG, "No participants, can't form leader board")
-      return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.isAllRoundCompleted())
+      return LeaderBoardData.create(leaderBoardPayload, true)
     }
 
     for (let i = 0; i < participantsSize; i++) {
