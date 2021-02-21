@@ -127,7 +127,12 @@ class GameEventHandlerService {
           gamePlayInfo.setGamePlayStatus(GamePlayStatus.FINISHED)
           this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
         } else {
-          gamePlayInfo.incrementMatchIndex()
+
+          if (gamePlayInfo.isCurrentRoundCompleted())
+            gamePlayInfo.incrementCurrentRound()
+          else
+            gamePlayInfo.incrementMatchIndex()
+
           this.gamePlayInfoRepository
             .saveGameInfo(gamePlayInfo)
             .then(() => {
@@ -146,18 +151,7 @@ class GameEventHandlerService {
     logger.logInfo(GameEventHandlerService.TAG, `rotateUserRoles for game = ${gameKey}`)
     this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
       .then(gamePlayInfo => this.rotateRoles(gamePlayInfo))
-      .then(gamePlayInfo => {
-
-        logger.logInfo(GameEventHandlerService.TAG, `rotateUserGameScreenState gamePlayInfo.participants[0].gameScreenState 
-        ${gamePlayInfo.participants[0].getGameScreenState()}`)
-
-        if (gamePlayInfo.participants[0].getGameScreenState() == GameScreen.State.SELECT_DRAWING_WORD) {
-          logger.logInfo(GameEventHandlerService.TAG, `rotateUserGameScreenState one round trip completed`)
-          gamePlayInfo.incrementCurrentRound()
-        }
-
-        return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
-      })
+      .then(gamePlayInfo => this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo))
       .then(gamePlayInfo => {
         gamePlayInfo.participants.forEach(participant => {
 

@@ -222,6 +222,10 @@ class GamePlayInfo {
     return ttlInSeconds
   }
 
+  isCurrentRoundCompleted(): boolean {
+    return this.isAllParticipantReceivedTheScoreForCurrentRound() && this.matchIndex >= this.participants.length
+  }
+
   isAllRoundCompleted(): Boolean {
     return this.currentRound >= this.noOfRounds && this.isAllParticipantReceivedTheScoreForCurrentRound() && this.matchIndex >= this.participants.length
   }
