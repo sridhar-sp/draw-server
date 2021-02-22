@@ -26,6 +26,7 @@ import AnswerEventResponse from "../models/AnswerEventResponse";
 import UserScore from "../models/UserScore";
 import LeaderBoardData from "../models/LeaderBoardData";
 import SocketUtils from "../socket/SocketUtils";
+import Participant from "../models/Participant";
 
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
@@ -52,24 +53,23 @@ class GameEventHandlerService {
 
     const gameKey = socket.getGameKey();
 
-    this.gamePlayInfoRepository.addParticipant(gameKey, socket.id)
-      .then(_ => this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey))
+    this.gamePlayInfoRepository
+      .getGameInfoOrThrow(gameKey)
       .then(gamePlayInfo => {
+        gamePlayInfo.addParticipant(Participant.create(socket.id))
+        return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+      })
+      .then(gamePlayInfo => {
+
         socket.emit(SocketEvents.Room.JOINED, SuccessResponse.createSuccessResponse(
-          SimpleGameInfo.createSimpleGameInfo(
-            gamePlayInfo.gameKey,
-            gamePlayInfo.noOfRounds,
-            gamePlayInfo.maxDrawingTime,
-            gamePlayInfo.maxWordSelectionTime
-          )
+          SimpleGameInfo.createSimpleGameInfo(gamePlayInfo.gameKey, gamePlayInfo.noOfRounds,
+            gamePlayInfo.maxDrawingTime, gamePlayInfo.maxWordSelectionTime)
         ))
 
-        socket.to(socket.getGameKey()).emit(SocketEvents.Room.MEMBER_ADD,
+        socket.to(gameKey).emit(SocketEvents.Room.MEMBER_ADD,
           SuccessResponse.createSuccessResponse(socket.getUserRecord()))
-      }).catch(error => {
-        socket.emit(SocketEvents.Room.JOINED, ErrorResponse.createErrorResponse(500, String(error)))
       })
-
+      .catch(error => socket.emit(SocketEvents.Room.JOINED, ErrorResponse.createErrorResponse(500, String(error))))
   }
 
   async handleLeave(socket: Socket) {

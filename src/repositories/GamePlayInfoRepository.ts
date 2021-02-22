@@ -1,7 +1,5 @@
 import GamePlayInfo from "../models/GamePlayInfo";
 import RedisHelper from "../redis/RedisHelperV2";
-import logger from "../logger/logger";
-import Participant from "../models/Participant";
 
 class GamePlayInfoRepository {
   private static TAG = "GamePlayInfoRepository";
@@ -42,20 +40,6 @@ class GamePlayInfoRepository {
     return this.redisHelper.setString(gamePlayInfo.gameKey, gamePlayInfo.toJson())
       .then(_ => this.redisHelper.expire(gamePlayInfo.gameKey, gamePlayInfo.getTTLInSeconds()))
       .then(_ => gamePlayInfo)
-  }
-
-  addParticipant(gameKey: string, socketId: string): Promise<GamePlayInfo> {
-    logger.log(`addParticipant ${socketId} for game ${gameKey}`);
-    return new Promise((resolve: (gamePlayInfo: GamePlayInfo) => void, reject) => {
-      this.getGameInfoOrThrow(gameKey)
-        .then((gamePlayInfo) => {
-          //To-do based on game play status, decide which state to assign to the participant
-          gamePlayInfo.addParticipant(Participant.create(socketId));
-          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson()).then(() => gamePlayInfo);
-        })
-        .then(gamePlayInfo => resolve(gamePlayInfo))
-        .catch(err => reject(err));
-    });
   }
 
 }
