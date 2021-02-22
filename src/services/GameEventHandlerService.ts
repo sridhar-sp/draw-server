@@ -77,9 +77,35 @@ class GameEventHandlerService {
       socket.leave(socket.getGameKey())
       socket.to(socket.getGameKey()).emit(SocketEvents.Room.MEMBER_LEFT,
         SuccessResponse.createSuccessResponse(socket.getUserRecord()))
-      await this.gamePlayInfoRepository.removeParticipant(socket.getGameKey(), socket.id);
+
+      const gameKey = socket.getGameKey()
+      await this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
+        .then((gamePlayInfo) => {
+
+          gamePlayInfo.removeParticipant(socket.id);
+
+          if (gamePlayInfo.isGameStarted() && gamePlayInfo.participants.length <= 1)
+            gamePlayInfo.setGamePlayStatus(GamePlayStatus.FINISHED) //Can't play with 0 or 1 participant, hence finish the game
+
+          return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+        })
+        .then((gamePlayInfo) => {
+          if (gamePlayInfo.isGameFinished() || gamePlayInfo.getDrawingParticipant() == null) {
+
+            const autoSelectWordTaskId = gamePlayInfo.autoSelectWordTaskId != null ? gamePlayInfo.autoSelectWordTaskId : "-1"
+            const endDrawingSessionTaskId = gamePlayInfo.endDrawingSessionTaskId != null ? gamePlayInfo.endDrawingSessionTaskId : "-1"
+
+            return this.taskScheduler
+              .invalidateTask(autoSelectWordTaskId)
+              .then(() => this.taskScheduler.invalidateTask(endDrawingSessionTaskId))
+              .then(() => this.endCurrentDrawingSession(gameKey))
+          }
+
+        })
+        .catch((err) => logger.logError(GameEventHandlerService.TAG, err));
+
     } catch (err) {
-      logger.log(`Caught error ${err}}`);
+      logger.logError(GameEventHandlerService.TAG, err)
     }
   }
 
@@ -124,8 +150,10 @@ class GameEventHandlerService {
           SuccessResponse.createSuccessResponse(GameScreenStatePayload.createLeaderBoard(leaderBoardData)))
 
         if (leaderBoardData.isGameCompleted()) {
-          gamePlayInfo.setGamePlayStatus(GamePlayStatus.FINISHED)
-          this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+          if (!gamePlayInfo.isGameFinished()) {
+            gamePlayInfo.setGamePlayStatus(GamePlayStatus.FINISHED)
+            this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+          }
         } else {
 
           if (gamePlayInfo.isCurrentRoundCompleted())
@@ -426,7 +454,7 @@ class GameEventHandlerService {
     }
 
     leaderBoardPayload.sort((i1, i2) => i2.score - i1.score)
-    return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.isAllRoundCompleted())
+    return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.isAllRoundCompleted() || gamePlayInfo.isGameFinished())
   }
 
   private getSocketForId(socketId: string): Socket | null {

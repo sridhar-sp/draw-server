@@ -110,6 +110,9 @@ class GamePlayInfo {
 
     this.participants.splice(index, 1);
 
+    if (this.currentDrawingParticipant != null && this.currentDrawingParticipant.socketId == socketId)
+      this.currentDrawingParticipant = null
+
     return participantToRemove;
   }
 
@@ -230,7 +233,7 @@ class GamePlayInfo {
     return this.currentRound >= this.noOfRounds && this.isAllParticipantReceivedTheScoreForCurrentRound() && this.matchIndex >= this.participants.length
   }
 
-  setDrawingParticipant(drawingParticipant: Participant) {
+  setDrawingParticipant(drawingParticipant: Participant | null) {
     this.currentDrawingParticipant = drawingParticipant
   }
 
@@ -261,6 +264,13 @@ class GamePlayInfo {
 
   setGamePlayStatus(gamePlayStatus: GamePlayStatus) {
     this.gamePlayStatus = gamePlayStatus
+  }
+
+  isGameStarted(): boolean {
+    return this.gamePlayStatus == GamePlayStatus.STARTED
+  }
+  isGameFinished(): boolean {
+    return this.gamePlayStatus == GamePlayStatus.FINISHED
   }
 }
 

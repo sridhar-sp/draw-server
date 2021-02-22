@@ -1,11 +1,7 @@
-import { JsxEmit } from "typescript";
 import GamePlayInfo from "../models/GamePlayInfo";
-import GamePlayStatus from "../models/GamePlayStatus";
 import RedisHelper from "../redis/RedisHelperV2";
 import logger from "../logger/logger";
 import Participant from "../models/Participant";
-import GameScreen from "../models/GameScreen";
-import TaskType from "../scheduler/TaskType";
 
 class GamePlayInfoRepository {
   private static TAG = "GamePlayInfoRepository";
@@ -48,45 +44,20 @@ class GamePlayInfoRepository {
       .then(_ => gamePlayInfo)
   }
 
-  addParticipant(gameKey: string, socketId: string): Promise<void> {
+  addParticipant(gameKey: string, socketId: string): Promise<GamePlayInfo> {
     logger.log(`addParticipant ${socketId} for game ${gameKey}`);
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve: (gamePlayInfo: GamePlayInfo) => void, reject) => {
       this.getGameInfoOrThrow(gameKey)
         .then((gamePlayInfo) => {
           //To-do based on game play status, decide which state to assign to the participant
           gamePlayInfo.addParticipant(Participant.create(socketId));
-          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
+          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson()).then(() => gamePlayInfo);
         })
-        .then(_ => resolve())
+        .then(gamePlayInfo => resolve(gamePlayInfo))
         .catch(err => reject(err));
     });
   }
 
-  removeParticipant(gameKey: string, socketId: string): Promise<void> {
-    logger.log(`removeParticipant ${socketId} for game ${gameKey}`);
-    return new Promise((resolve, reject) => {
-      this.getGameInfoOrThrow(gameKey)
-        .then((gamePlayInfo) => {
-          gamePlayInfo.removeParticipant(socketId);
-          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
-        })
-        .then((_) => resolve())
-        .catch((err) => reject(err));
-    });
-  }
-
-  updateGameStatus(gameKey: string, gamePlayStatus: GamePlayStatus): Promise<void> {
-    logger.logInfo(GamePlayInfoRepository.TAG, `updateGameStatus ${gamePlayStatus} for game ${gameKey}`);
-    return new Promise((resolve, reject) => {
-      this.getGameInfoOrThrow(gameKey)
-        .then((gamePlayInfo) => {
-          gamePlayInfo.updateGamePlayStatus(gamePlayStatus);
-          return this.redisHelper.setString(gameKey, gamePlayInfo.toJson());
-        })
-        .then((_) => resolve())
-        .catch((err) => reject(err));
-    });
-  }
 }
 
 export default GamePlayInfoRepository;
