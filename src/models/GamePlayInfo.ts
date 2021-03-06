@@ -300,6 +300,18 @@ class GamePlayInfo {
   isGameFinished(): boolean {
     return this.gamePlayStatus == GamePlayStatus.FINISHED
   }
+
+  getCurrentRound(): number {
+    return this.currentRound
+  }
+
+  getTotalRounds(): number {
+    return this.noOfRounds
+  }
+
+  getMatchIndex(): number {
+    return this.matchIndex
+  }
 }
 
 export default GamePlayInfo;
