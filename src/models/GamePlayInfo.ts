@@ -225,7 +225,6 @@ class GamePlayInfo {
   getTTLInSeconds(): number {
     const minTTLInSeconds = 60 * 60//1 Hour
     const ttlInSeconds = minTTLInSeconds + this.maxDrawingTime * this.maxWordSelectionTime * this.participants.length * Math.max(this.noOfRounds - this.currentRound, 0)
-    logger.logDebug("GamePlayInfo", `getTTLInSeconds ${ttlInSeconds}`)
     return ttlInSeconds
   }
 
