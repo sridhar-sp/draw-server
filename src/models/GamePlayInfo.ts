@@ -18,12 +18,13 @@ class GamePlayInfo {
       copyObj.autoSelectWordTaskId,
       copyObj.endDrawingSessionTaskId,
       copyObj.word,
+      copyObj.hint,
       copyObj.matchIndex
     );
   }
 
   static create(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number) {
-    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, noOfRounds, 1, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null, 1);
+    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, noOfRounds, 1, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null, null, 1);
   }
 
   public static fromJson(json: string): GamePlayInfo | null {
@@ -46,6 +47,7 @@ class GamePlayInfo {
   public autoSelectWordTaskId: string | null;
   public endDrawingSessionTaskId: string | null;
   public word: string | null;
+  private hint: string | null;
   private matchIndex: number
 
   constructor(
@@ -60,6 +62,7 @@ class GamePlayInfo {
     autoSelectWordTaskId: string | null,
     endDrawingSessionTaskId: string | null,
     word: string | null,
+    hint: string | null,
     matchIndex: number
   ) {
     this.gameKey = gameKey;
@@ -73,6 +76,7 @@ class GamePlayInfo {
     this.autoSelectWordTaskId = autoSelectWordTaskId;
     this.endDrawingSessionTaskId = endDrawingSessionTaskId;
     this.word = word;
+    this.hint = hint
     this.matchIndex = matchIndex
   }
 
@@ -237,6 +241,22 @@ class GamePlayInfo {
     this.currentDrawingParticipant = drawingParticipant
   }
 
+  setDrawingParticipantGameStateAsDraw() {
+    this.setDrawingParticipantGameState(GameScreen.State.DRAW)
+  }
+
+  setDrawingParticipantGameStateAsSelectingWord() {
+    this.setDrawingParticipantGameState(GameScreen.State.SELECT_DRAWING_WORD)
+  }
+
+  private setDrawingParticipantGameState(gameScreenState: GameScreen) {
+    if (this.currentDrawingParticipant == null) {
+      logger.warn("Trying to set drawing participant game state on null")
+      return
+    }
+    this.currentDrawingParticipant.setGameScreenState(gameScreenState)
+  }
+
   //Current/Last Drawing participant
   getDrawingParticipant(): Participant | null {
     return this.currentDrawingParticipant
@@ -256,6 +276,14 @@ class GamePlayInfo {
 
   setDrawingWord(word: string) {
     this.word = word
+  }
+
+  setDrawingHint(hint: string) {
+    this.hint = hint
+  }
+
+  getDrawingHint(): string | null {
+    return this.hint
   }
 
   getGamePlayStatus(): GamePlayStatus {
