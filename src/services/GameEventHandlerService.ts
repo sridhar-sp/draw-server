@@ -15,7 +15,6 @@ import Task from "../scheduler/Task";
 import logger from "../logger/logger";
 import TaskType from "../scheduler/TaskType";
 import AutoSelectWordTaskRequest from "../models/AutoSelectWordTaskRequest";
-import DrawGameScreenStateData from "../models/DrawGameScreenStateData";
 import QuestionRepository from "../repositories/QuestionRepository";
 import SimpleGameInfo from "../models/SimpleGameInfo";
 import GamePlayInfo from "../models/GamePlayInfo";
@@ -73,6 +72,7 @@ class GameEventHandlerService {
 
   async handleLeave(socket: Socket) {
     try {
+      logger.logInfo(GameEventHandlerService.TAG, `${socket.getUserRecord().displayName} disconnected. id = ${socket.id}`)
       socket.leave(socket.getGameKey())
       socket.to(socket.getGameKey()).emit(SocketEvents.Room.MEMBER_LEFT,
         SuccessResponse.createSuccessResponse(socket.getUserRecord()))
@@ -231,9 +231,8 @@ class GameEventHandlerService {
           case GameScreen.State.DRAW:
             if (gamePlayInfo.word == null)
               throw new Error("No drawing word is selected, but the game screen state is set as RAW");
-            return SuccessResponse.createSuccessResponse(
-              GameScreenStatePayload.create(gameScreenState, DrawGameScreenStateData.create(gamePlayInfo.word).toJson())
-            );
+
+            return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createDraw(gamePlayInfo));
           case GameScreen.State.WAIT_FOR_DRAWING_WORD:
             return this.createWaitForDrawingWordResponse(this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo))
           case GameScreen.State.VIEW:
@@ -340,9 +339,7 @@ class GameEventHandlerService {
           if (participant.getGameScreenState() == GameScreen.State.DRAW) {
             socket?.emit(
               SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
-              SuccessResponse.createSuccessResponse(
-                GameScreenStatePayload.create(GameScreen.State.DRAW, DrawGameScreenStateData.create(word).toJson())
-              )
+              SuccessResponse.createSuccessResponse(GameScreenStatePayload.createDraw(gamePlayInfo))
             );
           }
           else {

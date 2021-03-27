@@ -2,6 +2,8 @@ import GameScreen from "./GameScreen";
 import SimpleUserRecord from "./SimpleUserRecord";
 import LeaderBoardData from "./LeaderBoardData";
 import ViewGameScreenStateData from "./ViewGameScreenStateData";
+import GamePlayInfo from "./GamePlayInfo";
+import DrawGameScreenStateData from "./DrawGameScreenStateData";
 
 class GameScreenStatePayload {
   public gameScreenState: GameScreen;
@@ -26,6 +28,14 @@ class GameScreenStatePayload {
 
   static createLeaderBoard(leaderBoardData: LeaderBoardData): GameScreenStatePayload {
     return new GameScreenStatePayload(GameScreen.State.LEADER_BOARD, leaderBoardData.toJson());
+  }
+
+  static createDraw(gamePlayInfo: GamePlayInfo): GameScreenStatePayload {
+    const word = gamePlayInfo.getDrawingWord() != null ? gamePlayInfo.getDrawingWord()!! : ""
+
+    return GameScreenStatePayload.create(GameScreen.State.DRAW,
+      DrawGameScreenStateData.create(word, gamePlayInfo.maxDrawingTime).toJson()
+    )
   }
 
   constructor(gameScreenState: GameScreen, screenData: string) {
