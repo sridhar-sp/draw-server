@@ -21,9 +21,9 @@ class GameScreenStatePayload {
     return new GameScreenStatePayload(GameScreen.State.SELECT_DRAWING_WORD, "");
   }
 
-  static createViewStatePayload(hint: string, drawingParticipantUserRecord: SimpleUserRecord): GameScreenStatePayload {
+  static createViewStatePayload(hint: string, maxDrawingTimeInSeconds: number, drawingParticipantUserRecord: SimpleUserRecord): GameScreenStatePayload {
     return GameScreenStatePayload.create(GameScreen.State.VIEW,
-      ViewGameScreenStateData.create(hint, drawingParticipantUserRecord).toJson())
+      ViewGameScreenStateData.create(hint, maxDrawingTimeInSeconds, drawingParticipantUserRecord).toJson())
   }
 
   static createLeaderBoard(leaderBoardData: LeaderBoardData): GameScreenStatePayload {

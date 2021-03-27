@@ -222,9 +222,7 @@ class GameEventHandlerService {
             if (currentDrawingParticipant.getGameScreenState() == GameScreen.State.SELECT_DRAWING_WORD) {
               return this.createWaitForDrawingWordResponse(currentDrawingParticipant.socketId)
             } else {
-              const hint = gamePlayInfo.getDrawingHint()
-              return this.createViewGameScreenStateResponse(hint != null ? hint : "",
-                this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo))
+              return this.createViewGameScreenStateResponse(gamePlayInfo)
             }
           case GameScreen.State.SELECT_DRAWING_WORD:
             return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord());
@@ -236,9 +234,7 @@ class GameEventHandlerService {
           case GameScreen.State.WAIT_FOR_DRAWING_WORD:
             return this.createWaitForDrawingWordResponse(this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo))
           case GameScreen.State.VIEW:
-            const hint = gamePlayInfo.getDrawingHint()
-            return this.createViewGameScreenStateResponse(hint != null ? hint : "",
-              this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo))
+            return this.createViewGameScreenStateResponse(gamePlayInfo)
           case GameScreen.State.LEADER_BOARD:
             return SuccessResponse.createSuccessResponse(
               GameScreenStatePayload.createLeaderBoard(this.formLeaderBoardPayloadFrom(gamePlayInfo))
@@ -268,13 +264,17 @@ class GameEventHandlerService {
     );
   }
 
-  private createViewGameScreenStateResponse(hint: string, drawingParticipantSocketId: string) {
-    const drawingParticipantSocket = this.socketServer.sockets.sockets[drawingParticipantSocketId];
+  private createViewGameScreenStateResponse(gamePlayInfo: GamePlayInfo) {
+
+    const hint = gamePlayInfo.getDrawingHint() != null ? gamePlayInfo.getDrawingHint()!! : ""
+    const maxDrawingTimeInSeconds = gamePlayInfo.maxDrawingTime
+
+    const drawingParticipantSocket = this.socketServer.sockets.sockets[this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo)];
     if (null == drawingParticipantSocket)
       throw new Error(`Drawing participant socket instance is not found`);
 
     return SuccessResponse.createSuccessResponse(
-      GameScreenStatePayload.createViewStatePayload(hint, drawingParticipantSocket.getUserRecord())
+      GameScreenStatePayload.createViewStatePayload(hint, maxDrawingTimeInSeconds, drawingParticipantSocket.getUserRecord())
     );
   }
 
@@ -347,7 +347,7 @@ class GameEventHandlerService {
             socket?.emit(
               SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
               SuccessResponse.createSuccessResponse(
-                GameScreenStatePayload.createViewStatePayload(hint != null ? hint : "", fromSocket.getUserRecord())
+                GameScreenStatePayload.createViewStatePayload(hint != null ? hint : "", gamePlayInfo.maxDrawingTime, fromSocket.getUserRecord())
               )
             );
           }

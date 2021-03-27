@@ -1,15 +1,17 @@
 import SimpleUserRecord from "../models/SimpleUserRecord";
 
 class ViewGameScreenStateData {
-  public wordHint: string;
-  public drawingParticipantUserRecord: SimpleUserRecord;
+  private wordHint: string;
+  private maxDrawingTimeInSeconds: number;
+  private drawingParticipantUserRecord: SimpleUserRecord;
 
-  static create(wordHint: string, drawingParticipantUserRecord: SimpleUserRecord): ViewGameScreenStateData {
-    return new ViewGameScreenStateData(wordHint, drawingParticipantUserRecord);
+  static create(wordHint: string, maxDrawingTimeInSeconds: number, drawingParticipantUserRecord: SimpleUserRecord): ViewGameScreenStateData {
+    return new ViewGameScreenStateData(wordHint, maxDrawingTimeInSeconds, drawingParticipantUserRecord);
   }
 
-  constructor(wordHint: string, drawingParticipantUserRecord: SimpleUserRecord) {
+  constructor(wordHint: string, maxDrawingTimeInSeconds: number, drawingParticipantUserRecord: SimpleUserRecord) {
     this.wordHint = wordHint;
+    this.maxDrawingTimeInSeconds = maxDrawingTimeInSeconds;
     this.drawingParticipantUserRecord = drawingParticipantUserRecord;
   }
 
