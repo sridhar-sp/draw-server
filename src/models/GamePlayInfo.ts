@@ -40,7 +40,7 @@ class GamePlayInfo {
   private gamePlayStatus: GamePlayStatus;
   public noOfRounds: number;
   private currentRound: number;
-  public maxWordSelectionTime: number
+  private maxWordSelectionTime: number
   public maxDrawingTime: number
   private currentDrawingParticipant: Participant | null;
   public participants: Participant[];
@@ -310,6 +310,10 @@ class GamePlayInfo {
 
   getMatchIndex(): number {
     return this.matchIndex
+  }
+
+  getMaxWordSelectionTimeInSeconds(): number {
+    return this.maxWordSelectionTime
   }
 }
 

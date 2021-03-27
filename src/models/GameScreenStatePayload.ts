@@ -5,6 +5,7 @@ import ViewGameScreenStateData from "./ViewGameScreenStateData";
 import GamePlayInfo from "./GamePlayInfo";
 import DrawGameScreenStateData from "./DrawGameScreenStateData";
 import SelectWordGameScreenData from "./SelectWordGameScreenData";
+import WordWaitScreenData from "./WordWaitScreenData";
 
 class GameScreenStatePayload {
   public gameScreenState: GameScreen;
@@ -14,8 +15,9 @@ class GameScreenStatePayload {
     return new GameScreenStatePayload(gameScreenState, screenData);
   }
 
-  static createWaitForDrawingWord(simpleUserRecord: SimpleUserRecord): GameScreenStatePayload {
-    return new GameScreenStatePayload(GameScreen.State.WAIT_FOR_DRAWING_WORD, simpleUserRecord.toJson());
+  static createWaitForDrawingWord(maxWordSelectionTimeInSeconds: number, simpleUserRecord: SimpleUserRecord): GameScreenStatePayload {
+    return new GameScreenStatePayload(GameScreen.State.WAIT_FOR_DRAWING_WORD,
+      WordWaitScreenData.create(maxWordSelectionTimeInSeconds, simpleUserRecord).toJson());
   }
 
   static createSelectDrawingWord(maxWordSelectionTimeInSeconds: number): GameScreenStatePayload {
