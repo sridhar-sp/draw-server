@@ -4,6 +4,7 @@ import LeaderBoardData from "./LeaderBoardData";
 import ViewGameScreenStateData from "./ViewGameScreenStateData";
 import GamePlayInfo from "./GamePlayInfo";
 import DrawGameScreenStateData from "./DrawGameScreenStateData";
+import SelectWordGameScreenData from "./SelectWordGameScreenData";
 
 class GameScreenStatePayload {
   public gameScreenState: GameScreen;
@@ -17,8 +18,8 @@ class GameScreenStatePayload {
     return new GameScreenStatePayload(GameScreen.State.WAIT_FOR_DRAWING_WORD, simpleUserRecord.toJson());
   }
 
-  static createSelectDrawingWord(): GameScreenStatePayload {
-    return new GameScreenStatePayload(GameScreen.State.SELECT_DRAWING_WORD, "");
+  static createSelectDrawingWord(maxWordSelectionTimeInSeconds: number): GameScreenStatePayload {
+    return new GameScreenStatePayload(GameScreen.State.SELECT_DRAWING_WORD, SelectWordGameScreenData.create(maxWordSelectionTimeInSeconds).toJson());
   }
 
   static createViewStatePayload(hint: string, maxDrawingTimeInSeconds: number, drawingParticipantUserRecord: SimpleUserRecord): GameScreenStatePayload {

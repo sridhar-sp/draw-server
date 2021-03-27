@@ -192,7 +192,7 @@ class GameEventHandlerService {
 
           let response
           if (participant.socketId == drawingParticipant.socketId) {
-            response = SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord())
+            response = SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord(gamePlayInfo.maxWordSelectionTime))
           } else {
             response = SuccessResponse.createSuccessResponse(GameScreenStatePayload.createWaitForDrawingWord(drawingParticipantSocket.getUserRecord()))
           }
@@ -225,7 +225,7 @@ class GameEventHandlerService {
               return this.createViewGameScreenStateResponse(gamePlayInfo)
             }
           case GameScreen.State.SELECT_DRAWING_WORD:
-            return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord());
+            return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord(gamePlayInfo.maxWordSelectionTime));
           case GameScreen.State.DRAW:
             if (gamePlayInfo.word == null)
               throw new Error("No drawing word is selected, but the game screen state is set as RAW");
