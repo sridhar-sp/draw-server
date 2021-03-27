@@ -16,21 +16,17 @@ class GameScreenStatePayload {
   }
 
   static createWaitForDrawingWord(maxWordSelectionTimeInSeconds: number, simpleUserRecord: SimpleUserRecord): GameScreenStatePayload {
-    return new GameScreenStatePayload(GameScreen.State.WAIT_FOR_DRAWING_WORD,
+    return GameScreenStatePayload.create(GameScreen.State.WAIT_FOR_DRAWING_WORD,
       WordWaitScreenData.create(maxWordSelectionTimeInSeconds, simpleUserRecord).toJson());
   }
 
   static createSelectDrawingWord(maxWordSelectionTimeInSeconds: number): GameScreenStatePayload {
-    return new GameScreenStatePayload(GameScreen.State.SELECT_DRAWING_WORD, SelectWordGameScreenData.create(maxWordSelectionTimeInSeconds).toJson());
+    return GameScreenStatePayload.create(GameScreen.State.SELECT_DRAWING_WORD, SelectWordGameScreenData.create(maxWordSelectionTimeInSeconds).toJson());
   }
 
   static createViewStatePayload(hint: string, maxDrawingTimeInSeconds: number, drawingParticipantUserRecord: SimpleUserRecord): GameScreenStatePayload {
     return GameScreenStatePayload.create(GameScreen.State.VIEW,
       ViewGameScreenStateData.create(hint, maxDrawingTimeInSeconds, drawingParticipantUserRecord).toJson())
-  }
-
-  static createLeaderBoard(leaderBoardData: LeaderBoardData): GameScreenStatePayload {
-    return new GameScreenStatePayload(GameScreen.State.LEADER_BOARD, leaderBoardData.toJson());
   }
 
   static createDraw(gamePlayInfo: GamePlayInfo): GameScreenStatePayload {
@@ -39,6 +35,10 @@ class GameScreenStatePayload {
     return GameScreenStatePayload.create(GameScreen.State.DRAW,
       DrawGameScreenStateData.create(word, gamePlayInfo.maxDrawingTime).toJson()
     )
+  }
+
+  static createLeaderBoard(leaderBoardData: LeaderBoardData): GameScreenStatePayload {
+    return GameScreenStatePayload.create(GameScreen.State.LEADER_BOARD, leaderBoardData.toJson());
   }
 
   constructor(gameScreenState: GameScreen, screenData: string) {

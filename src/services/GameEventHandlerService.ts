@@ -467,7 +467,8 @@ class GameEventHandlerService {
     if (participantsSize == 0) {
       logger.logWarn(GameEventHandlerService.TAG, "No participants, can't form leader board")
       return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.getCurrentRound(),
-        gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(), true)
+        gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(),
+        true, GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
     }
 
     for (let i = 0; i < participantsSize; i++) {
@@ -479,8 +480,10 @@ class GameEventHandlerService {
     }
 
     leaderBoardPayload.sort((i1, i2) => i2.score - i1.score)
-    return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.getCurrentRound(), gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(),
-      gamePlayInfo.isAllRoundCompleted() || gamePlayInfo.isGameFinished())
+    return LeaderBoardData.create(
+      leaderBoardPayload, gamePlayInfo.getCurrentRound(),
+      gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(),
+      gamePlayInfo.isAllRoundCompleted() || gamePlayInfo.isGameFinished(), GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
   }
 
   private getSocketForId(socketId: string): Socket | null {
