@@ -1,14 +1,16 @@
 import SimpleUserRecord from "./SimpleUserRecord";
 
 class DrawGameScreenStateData {
-  public word: string;
+  private word: string;
+  private maxDrawingTimeInSeconds: number
 
-  static create(word: string): DrawGameScreenStateData {
-    return new DrawGameScreenStateData(word);
+  static create(word: string, maxDrawingTimeInSeconds: number): DrawGameScreenStateData {
+    return new DrawGameScreenStateData(word, maxDrawingTimeInSeconds);
   }
 
-  constructor(word: string) {
+  constructor(word: string, maxDrawingTimeInSeconds: number) {
     this.word = word;
+    this.maxDrawingTimeInSeconds = maxDrawingTimeInSeconds
   }
 
   toJson(): string {

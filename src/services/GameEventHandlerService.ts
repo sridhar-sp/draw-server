@@ -15,7 +15,6 @@ import Task from "../scheduler/Task";
 import logger from "../logger/logger";
 import TaskType from "../scheduler/TaskType";
 import AutoSelectWordTaskRequest from "../models/AutoSelectWordTaskRequest";
-import DrawGameScreenStateData from "../models/DrawGameScreenStateData";
 import QuestionRepository from "../repositories/QuestionRepository";
 import SimpleGameInfo from "../models/SimpleGameInfo";
 import GamePlayInfo from "../models/GamePlayInfo";
@@ -62,7 +61,7 @@ class GameEventHandlerService {
 
         socket.emit(SocketEvents.Room.JOINED, SuccessResponse.createSuccessResponse(
           SimpleGameInfo.createSimpleGameInfo(gamePlayInfo.gameKey, gamePlayInfo.noOfRounds,
-            gamePlayInfo.maxDrawingTime, gamePlayInfo.maxWordSelectionTime, gamePlayInfo.getGamePlayStatus())
+            gamePlayInfo.maxDrawingTime, gamePlayInfo.getMaxWordSelectionTimeInSeconds(), gamePlayInfo.getGamePlayStatus())
         ))
 
         socket.to(gameKey).emit(SocketEvents.Room.MEMBER_ADD,
@@ -73,6 +72,7 @@ class GameEventHandlerService {
 
   async handleLeave(socket: Socket) {
     try {
+      logger.logInfo(GameEventHandlerService.TAG, `${socket.getUserRecord().displayName} disconnected. id = ${socket.id}`)
       socket.leave(socket.getGameKey())
       socket.to(socket.getGameKey()).emit(SocketEvents.Room.MEMBER_LEFT,
         SuccessResponse.createSuccessResponse(socket.getUserRecord()))
@@ -192,9 +192,10 @@ class GameEventHandlerService {
 
           let response
           if (participant.socketId == drawingParticipant.socketId) {
-            response = SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord())
+            response = SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord(gamePlayInfo.getMaxWordSelectionTimeInSeconds()))
           } else {
-            response = SuccessResponse.createSuccessResponse(GameScreenStatePayload.createWaitForDrawingWord(drawingParticipantSocket.getUserRecord()))
+            response = SuccessResponse.createSuccessResponse(
+              GameScreenStatePayload.createWaitForDrawingWord(gamePlayInfo.getMaxWordSelectionTimeInSeconds(), drawingParticipantSocket.getUserRecord()))
           }
 
           this.socketServer.to(participant.socketId).emit(SocketEvents.Game.GAME_SCREEN_STATE_RESULT, response);
@@ -220,26 +221,21 @@ class GameEventHandlerService {
               return SuccessResponse.createSuccessResponse(GameScreenStatePayload.create(gameScreenState, ""));
 
             if (currentDrawingParticipant.getGameScreenState() == GameScreen.State.SELECT_DRAWING_WORD) {
-              return this.createWaitForDrawingWordResponse(currentDrawingParticipant.socketId)
+              return this.createWaitForDrawingWordResponse(gamePlayInfo.getMaxWordSelectionTimeInSeconds(), currentDrawingParticipant.socketId)
             } else {
-              const hint = gamePlayInfo.getDrawingHint()
-              return this.createViewGameScreenStateResponse(hint != null ? hint : "",
-                this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo))
+              return this.createViewGameScreenStateResponse(gamePlayInfo)
             }
           case GameScreen.State.SELECT_DRAWING_WORD:
-            return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord());
+            return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord(gamePlayInfo.getMaxWordSelectionTimeInSeconds()));
           case GameScreen.State.DRAW:
             if (gamePlayInfo.word == null)
               throw new Error("No drawing word is selected, but the game screen state is set as RAW");
-            return SuccessResponse.createSuccessResponse(
-              GameScreenStatePayload.create(gameScreenState, DrawGameScreenStateData.create(gamePlayInfo.word).toJson())
-            );
+
+            return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createDraw(gamePlayInfo));
           case GameScreen.State.WAIT_FOR_DRAWING_WORD:
-            return this.createWaitForDrawingWordResponse(this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo))
+            return this.createWaitForDrawingWordResponse(gamePlayInfo.getMaxWordSelectionTimeInSeconds(), this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo))
           case GameScreen.State.VIEW:
-            const hint = gamePlayInfo.getDrawingHint()
-            return this.createViewGameScreenStateResponse(hint != null ? hint : "",
-              this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo))
+            return this.createViewGameScreenStateResponse(gamePlayInfo)
           case GameScreen.State.LEADER_BOARD:
             return SuccessResponse.createSuccessResponse(
               GameScreenStatePayload.createLeaderBoard(this.formLeaderBoardPayloadFrom(gamePlayInfo))
@@ -259,23 +255,27 @@ class GameEventHandlerService {
     return drawingParticipant.socketId
   }
 
-  private createWaitForDrawingWordResponse(drawingParticipantSocketId: string): SuccessResponse {
+  private createWaitForDrawingWordResponse(maxWordSelectionTimeInSeconds: number, drawingParticipantSocketId: string): SuccessResponse {
     const drawingParticipantSocket = this.socketServer.sockets.sockets[drawingParticipantSocketId];
     if (null == drawingParticipantSocket)
       throw new Error(`Drawing participant socket instance is not found`);
 
     return SuccessResponse.createSuccessResponse(
-      GameScreenStatePayload.createWaitForDrawingWord(drawingParticipantSocket.getUserRecord())
+      GameScreenStatePayload.createWaitForDrawingWord(maxWordSelectionTimeInSeconds, drawingParticipantSocket.getUserRecord())
     );
   }
 
-  private createViewGameScreenStateResponse(hint: string, drawingParticipantSocketId: string) {
-    const drawingParticipantSocket = this.socketServer.sockets.sockets[drawingParticipantSocketId];
+  private createViewGameScreenStateResponse(gamePlayInfo: GamePlayInfo) {
+
+    const hint = gamePlayInfo.getDrawingHint() != null ? gamePlayInfo.getDrawingHint()!! : ""
+    const maxDrawingTimeInSeconds = gamePlayInfo.maxDrawingTime
+
+    const drawingParticipantSocket = this.socketServer.sockets.sockets[this.getDrawingParticipantSocketIdOrThrow(gamePlayInfo)];
     if (null == drawingParticipantSocket)
       throw new Error(`Drawing participant socket instance is not found`);
 
     return SuccessResponse.createSuccessResponse(
-      GameScreenStatePayload.createViewStatePayload(hint, drawingParticipantSocket.getUserRecord())
+      GameScreenStatePayload.createViewStatePayload(hint, maxDrawingTimeInSeconds, drawingParticipantSocket.getUserRecord())
     );
   }
 
@@ -340,9 +340,7 @@ class GameEventHandlerService {
           if (participant.getGameScreenState() == GameScreen.State.DRAW) {
             socket?.emit(
               SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
-              SuccessResponse.createSuccessResponse(
-                GameScreenStatePayload.create(GameScreen.State.DRAW, DrawGameScreenStateData.create(word).toJson())
-              )
+              SuccessResponse.createSuccessResponse(GameScreenStatePayload.createDraw(gamePlayInfo))
             );
           }
           else {
@@ -350,7 +348,7 @@ class GameEventHandlerService {
             socket?.emit(
               SocketEvents.Game.GAME_SCREEN_STATE_RESULT,
               SuccessResponse.createSuccessResponse(
-                GameScreenStatePayload.createViewStatePayload(hint != null ? hint : "", fromSocket.getUserRecord())
+                GameScreenStatePayload.createViewStatePayload(hint != null ? hint : "", gamePlayInfo.maxDrawingTime, fromSocket.getUserRecord())
               )
             );
           }
@@ -455,7 +453,7 @@ class GameEventHandlerService {
 
   private scheduleAutoSelectWordTask(gamePlayInfo: GamePlayInfo, word: string, socketId: string): Promise<string> {
     return this.scheduleTask(TaskType.AUTO_SELECT_WORD,
-      AutoSelectWordTaskRequest.create(gamePlayInfo.gameKey, socketId, word).toJson(), gamePlayInfo.maxWordSelectionTime)
+      AutoSelectWordTaskRequest.create(gamePlayInfo.gameKey, socketId, word).toJson(), gamePlayInfo.getMaxWordSelectionTimeInSeconds())
   }
 
   private scheduleTask(taskType: TaskType, payload: string, taskDelayInSeconds: number): Promise<string> {
@@ -469,7 +467,8 @@ class GameEventHandlerService {
     if (participantsSize == 0) {
       logger.logWarn(GameEventHandlerService.TAG, "No participants, can't form leader board")
       return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.getCurrentRound(),
-        gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(), true)
+        gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(),
+        true, GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
     }
 
     for (let i = 0; i < participantsSize; i++) {
@@ -481,8 +480,10 @@ class GameEventHandlerService {
     }
 
     leaderBoardPayload.sort((i1, i2) => i2.score - i1.score)
-    return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.getCurrentRound(), gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(),
-      gamePlayInfo.isAllRoundCompleted() || gamePlayInfo.isGameFinished())
+    return LeaderBoardData.create(
+      leaderBoardPayload, gamePlayInfo.getCurrentRound(),
+      gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(),
+      gamePlayInfo.isAllRoundCompleted() || gamePlayInfo.isGameFinished(), GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
   }
 
   private getSocketForId(socketId: string): Socket | null {
