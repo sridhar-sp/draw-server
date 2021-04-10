@@ -1,4 +1,4 @@
-import redisHelper from '../redis/RedisHelper'
+import redisHelper from '../redis/RedisHelperSingleton'
 
 class TokenRepository {
 
