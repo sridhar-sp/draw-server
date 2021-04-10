@@ -138,7 +138,9 @@ class GameEventHandlerService {
 
     this.gamePlayInfoRepository.getGameInfoOrThrow(gameKey)
       .then(gamePlayInfo => {
-        gamePlayInfo.setDrawingParticipantScoreForCurrentMatch(10)//Add the score calc logic later
+        const drawingParticipantScore = this.calculateDrawingParticipateScoreUsingOtherParticipantScore(gamePlayInfo)
+
+        gamePlayInfo.setDrawingParticipantScoreForCurrentMatch(drawingParticipantScore)
         gamePlayInfo.setScoreAsZeroToParticipantsWhoHaveNotGuessedTheWordCorrectly()
         gamePlayInfo.setAllParticipantGameStateToLeaderBoard()
         return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
@@ -172,6 +174,28 @@ class GameEventHandlerService {
       })
       .catch(e => logger.logError(GameEventHandlerService.TAG, e))
 
+  }
+
+  private calculateDrawingParticipateScoreUsingOtherParticipantScore(gamePlayInfo: GamePlayInfo): number {
+    let drawingParticipantSocketId: string
+
+    if (gamePlayInfo.getDrawingParticipant() != null) {
+      drawingParticipantSocketId = gamePlayInfo.getDrawingParticipant()!!.socketId
+    } else {
+      logger.logError(GameEventHandlerService.name, "endCurrentDrawingSession :: Unable to find Drawing participant")
+      drawingParticipantSocketId = ""
+    }
+
+    var sumOfOtherParticipantScoresForCurrentMatch = 0
+
+    gamePlayInfo.participants
+      .filter(participant => participant.socketId != drawingParticipantSocketId)
+      .forEach(participant => {
+        const score = gamePlayInfo.getParticipantScoreForCurrentMatch(participant.socketId)
+        sumOfOtherParticipantScoresForCurrentMatch += Math.max(score, 0)
+      })
+
+    return Math.round(sumOfOtherParticipantScoresForCurrentMatch / gamePlayInfo.participants.length)
   }
 
   async rotateUserGameScreenState(gameKey: string) {
@@ -228,7 +252,7 @@ class GameEventHandlerService {
           case GameScreen.State.SELECT_DRAWING_WORD:
             return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createSelectDrawingWord(gamePlayInfo.getMaxWordSelectionTimeInSeconds()));
           case GameScreen.State.DRAW:
-            if (gamePlayInfo.word == null)
+            if (gamePlayInfo.getDrawingWord() == null)
               throw new Error("No drawing word is selected, but the game screen state is set as RAW");
 
             return SuccessResponse.createSuccessResponse(GameScreenStatePayload.createDraw(gamePlayInfo));
@@ -380,7 +404,7 @@ class GameEventHandlerService {
     this.gamePlayInfoRepository
       .getGameInfoOrThrow(socket.getGameKey())
       .then(async (gamePlayInfo) => {
-        const word = gamePlayInfo.word
+        const word = gamePlayInfo.getDrawingWord()
 
         if (word == null || word.trim() == "")
           throw new Error(`handleDrawingEvent :: No word data found in game play record for key: ${socket.getGameKey()}`);
@@ -388,7 +412,7 @@ class GameEventHandlerService {
         logger.logInfo(GameEventHandlerService.TAG, `Word = '${word} :: answer'${answer}`);
 
         if (answer.toLowerCase() == word.toLowerCase()) {
-          gamePlayInfo.setParticipantScoreForCurrentMatch(socket.id, word.length)//Dummy score
+          gamePlayInfo.setParticipantScoreForCurrentMatch(socket.id, gamePlayInfo.findScoreBasedOnAnswerTime())
 
           await this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
 

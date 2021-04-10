@@ -1,4 +1,3 @@
-import e from "express";
 import redis, { RedisClient } from "redis";
 import config from "../config";
 

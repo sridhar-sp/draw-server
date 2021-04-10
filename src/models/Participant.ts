@@ -3,7 +3,7 @@ import GameScreen from "./GameScreen";
 class Participant {
   socketId: string;
   private gameScreenState: GameScreen;
-  score: any | null
+  private score: any | null
 
   constructor(socketId: string, gameScreenState: GameScreen, score: any) {
     this.socketId = socketId;
