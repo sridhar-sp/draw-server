@@ -19,12 +19,13 @@ class GamePlayInfo {
       copyObj.endDrawingSessionTaskId,
       copyObj.word,
       copyObj.hint,
+      copyObj.wordSelectTimeInMilliseconds,
       copyObj.matchIndex
     );
   }
 
   static create(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number) {
-    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, noOfRounds, 1, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null, null, 1);
+    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, noOfRounds, 1, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null, null, 0, 1);
   }
 
   public static fromJson(json: string): GamePlayInfo | null {
@@ -46,8 +47,9 @@ class GamePlayInfo {
   public participants: Participant[];
   public autoSelectWordTaskId: string | null;
   public endDrawingSessionTaskId: string | null;
-  public word: string | null;
+  private word: string | null;
   private hint: string | null;
+  private wordSelectTimeInMilliseconds: number
   private matchIndex: number
 
   constructor(
@@ -63,6 +65,7 @@ class GamePlayInfo {
     endDrawingSessionTaskId: string | null,
     word: string | null,
     hint: string | null,
+    wordSelectTimeInMilliseconds: number,
     matchIndex: number
   ) {
     this.gameKey = gameKey;
@@ -77,6 +80,7 @@ class GamePlayInfo {
     this.endDrawingSessionTaskId = endDrawingSessionTaskId;
     this.word = word;
     this.hint = hint
+    this.wordSelectTimeInMilliseconds = wordSelectTimeInMilliseconds
     this.matchIndex = matchIndex
   }
 
@@ -275,6 +279,7 @@ class GamePlayInfo {
 
   setDrawingWord(word: string) {
     this.word = word
+    this.wordSelectTimeInMilliseconds = new Date().getTime()
   }
 
   setDrawingHint(hint: string) {
@@ -283,6 +288,10 @@ class GamePlayInfo {
 
   getDrawingHint(): string | null {
     return this.hint
+  }
+
+  findScoreBasedOnAnswerTime(): number {
+    return (this.maxDrawingTime * 1000 - (new Date().getTime() - this.wordSelectTimeInMilliseconds)) / 1000
   }
 
   getGamePlayStatus(): GamePlayStatus {
