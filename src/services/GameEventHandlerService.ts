@@ -15,7 +15,7 @@ import Task from "../scheduler/Task";
 import logger from "../logger/logger";
 import TaskType from "../scheduler/TaskType";
 import AutoSelectWordTaskRequest from "../models/AutoSelectWordTaskRequest";
-import QuestionRepository from "../repositories/QuestionRepository";
+import WordRepository from "../repositories/WordRepository";
 import SimpleGameInfo from "../models/SimpleGameInfo";
 import GamePlayInfo from "../models/GamePlayInfo";
 import AutoEndDrawingSessionTaskRequest from "../models/AutoEndDrawingSessionTaskRequest";
@@ -31,15 +31,17 @@ class GameEventHandlerService {
 
   private static LEADER_BOARD_VISIBLE_TIME_IN_SECONDS = 3
 
+  private static MAX_WORDS_TO_QUERY = 5
+
   private socketServer: Server;
   private gamePlayInfoRepository: GamePlayInfoRepository;
   private taskScheduler: TaskScheduler;
-  private questionRepository: QuestionRepository;
+  private wordRepository: WordRepository;
 
   constructor(socketServer: Server, taskScheduler: TaskScheduler) {
     this.socketServer = socketServer;
     this.gamePlayInfoRepository = GamePlayInfoRepository.create(redisHelper);
-    this.questionRepository = QuestionRepository.create();
+    this.wordRepository = WordRepository.create();
     this.taskScheduler = taskScheduler;
   }
 
@@ -306,21 +308,22 @@ class GameEventHandlerService {
   async handleFetchWordList(socket: Socket) {
     const gameKey = socket.getGameKey();
 
-    const questions = this.questionRepository.getRandomQuestions(5);
-
-    this.gamePlayInfoRepository
-      .getGameInfoOrThrow(gameKey)
-      .then(gamePlayInfo => {
-        this.scheduleAutoSelectWordTask(gamePlayInfo, questions[0], socket.id)
-          .then(taskId => {
-            gamePlayInfo.setAutoSelectWordTaskId(taskId)
-            return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+    this.wordRepository.getRandomWords(GameEventHandlerService.MAX_WORDS_TO_QUERY)
+      .then(questions => {
+        this.gamePlayInfoRepository
+          .getGameInfoOrThrow(gameKey)
+          .then(gamePlayInfo => {
+            this.scheduleAutoSelectWordTask(gamePlayInfo, questions[0], socket.id)
+              .then(taskId => {
+                gamePlayInfo.setAutoSelectWordTaskId(taskId)
+                return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo)
+              })
           })
-      })
-      .then(() => {
-        socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
-      })
-      .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
+          .then(() => {
+            socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
+          })
+          .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
+      }).catch(error => logger.logError(GameEventHandlerService.TAG, error))
   }
 
   async handleSelectWord(fromSocket: Socket, word: string) {
