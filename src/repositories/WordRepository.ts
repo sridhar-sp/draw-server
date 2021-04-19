@@ -1,10 +1,10 @@
 import { MongoClient } from "mongodb";
 import config from "../config"
 
-class QuestionRepository {
+class WordRepository {
 
-  static create(): QuestionRepository {
-    return new QuestionRepository();
+  static create(): WordRepository {
+    return new WordRepository();
   }
 
   private mongoClient: MongoClient
@@ -14,7 +14,7 @@ class QuestionRepository {
     this.mongoClient.connect() // async call
   }
 
-  getRandomQuestions(maxNoOfResults: number): Promise<Array<string>> {
+  getRandomWords(maxNoOfResults: number): Promise<Array<string>> {
     return new Promise((resolve: (questions: Array<string>) => void, reject: (error: Error) => void) => {
 
       if (!this.mongoClient.isConnected()) {
@@ -26,14 +26,14 @@ class QuestionRepository {
       const collection = database.collection(config.mongoQuestionCollectionName)
 
       collection.aggregate([{ "$sample": { size: maxNoOfResults } }])
-        .map<string>(document => document.question)
+        .map<string>(document => document.word)
         .toArray()
         .then(results => results.filter(result => result != null))
-        .then(questions => resolve(questions))
+        .then(words => resolve(words))
         .catch(error => reject(error))
 
     })
   }
 }
 
-export default QuestionRepository;
+export default WordRepository;
