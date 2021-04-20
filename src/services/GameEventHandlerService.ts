@@ -388,7 +388,7 @@ class GameEventHandlerService {
     const hint = [];
     for (let index = 0; index < word.length; index++) {
       const element = word.charAt(index);
-      if (Math.random() > 0.8) hint.push(word.charAt(index));
+      if (element == ' ' || Math.random() > 0.8) hint.push(element);
       else hint.push("_");
     }
     return hint.join("");
