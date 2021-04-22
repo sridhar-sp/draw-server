@@ -1,7 +1,13 @@
 import { MongoClient } from "mongodb";
 import config from "../config"
+import logger from "../logger/logger"
 
 class WordRepository {
+
+  private static TAG = "WordRepository"
+
+  private static FALLBACK_DRAWING_WORDS = ["Android", "Harry Potter"]
+  private static MAXIMUM_WAIT_TIME_IN_MILLISECONDS = 3000
 
   static create(): WordRepository {
     return new WordRepository();
@@ -15,10 +21,23 @@ class WordRepository {
   }
 
   getRandomWords(maxNoOfResults: number): Promise<Array<string>> {
+    return Promise.race(
+      [
+        this.getRandomWordsFromDatabase(maxNoOfResults),
+        new Promise((resolve: (words: Array<string>) => void, reject) => {
+          setTimeout(() => resolve(WordRepository.FALLBACK_DRAWING_WORDS), WordRepository.MAXIMUM_WAIT_TIME_IN_MILLISECONDS)
+        }),
+      ]
+    )
+  }
+
+  getRandomWordsFromDatabase(maxNoOfResults: number): Promise<Array<string>> {
     return new Promise((resolve: (questions: Array<string>) => void, reject: (error: Error) => void) => {
 
       if (!this.mongoClient.isConnected()) {
-        reject(new Error("Mongo db is not connected"))
+        logger.logError(WordRepository.TAG, "Mongo db is not connected, returning default values")
+
+        resolve(WordRepository.FALLBACK_DRAWING_WORDS)
         return
       }
 
