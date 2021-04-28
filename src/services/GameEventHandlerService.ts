@@ -29,7 +29,7 @@ import Participant from "../models/Participant";
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
 
-  private static LEADER_BOARD_VISIBLE_TIME_IN_SECONDS = 3
+  private static LEADER_BOARD_VISIBLE_TIME_IN_SECONDS = 5
 
   private static MAX_WORDS_TO_QUERY = 5
 
@@ -493,7 +493,9 @@ class GameEventHandlerService {
     const participantsSize = gamePlayInfo.participants.length
     if (participantsSize == 0) {
       logger.logWarn(GameEventHandlerService.TAG, "No participants, can't form leader board")
-      return LeaderBoardData.create(leaderBoardPayload, gamePlayInfo.getCurrentRound(),
+      return LeaderBoardData.create(leaderBoardPayload,
+        gamePlayInfo.getDrawingWord() != null ? gamePlayInfo.getDrawingWord()!! : "",
+        gamePlayInfo.getCurrentRound(),
         gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(),
         true, GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
     }
@@ -508,7 +510,9 @@ class GameEventHandlerService {
 
     leaderBoardPayload.sort((i1, i2) => i2.score - i1.score)
     return LeaderBoardData.create(
-      leaderBoardPayload, gamePlayInfo.getCurrentRound(),
+      leaderBoardPayload,
+      gamePlayInfo.getDrawingWord() != null ? gamePlayInfo.getDrawingWord()!! : "",
+      gamePlayInfo.getCurrentRound(),
       gamePlayInfo.getTotalRounds(), gamePlayInfo.getMatchIndex(),
       gamePlayInfo.isAllRoundCompleted() || gamePlayInfo.isGameFinished(), GameEventHandlerService.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS)
   }
