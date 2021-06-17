@@ -26,6 +26,10 @@ This project is configured with the 'ts-node-dev'. If you make some changes and 
 
     $ npm run dev
 
+## Run using docker
+
+    $ docker-compose up
+
 ## Docs
 
 Run `/api-docs` end point to get the full api documentation
