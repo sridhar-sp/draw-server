@@ -25,6 +25,7 @@ import UserScore from "../models/UserScore";
 import LeaderBoardData from "../models/LeaderBoardData";
 import SocketUtils from "../socket/SocketUtils";
 import Participant from "../models/Participant";
+import WordGuessEventResponse from "../models/WordGuessEventResponse";
 
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
@@ -472,6 +473,10 @@ class GameEventHandlerService {
           socket.emit(
             SocketEvents.Game.ANSWER_RESPONSE,
             SuccessResponse.createSuccessResponse(AnswerEventResponse.createWrongAnswerResponse(answer))
+          );
+          socket.broadcast.emit(
+            SocketEvents.Game.WORD_GUESS_EVENT,
+            SuccessResponse.createSuccessResponse(WordGuessEventResponse.create(answer, socket.getUserRecord()))
           );
         }
       })
