@@ -23,6 +23,8 @@ class Game {
 
   static ANSWER_REQUEST = "request:answer";
   static ANSWER_RESPONSE = "response:answer";
+
+  static WORD_GUESS_EVENT = "event:word_guess";
 }
 
 export default { Room, Game };

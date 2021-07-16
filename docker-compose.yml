@@ -1,0 +1,42 @@
+version: "3"
+services:
+  draw-guess:
+    build: .
+    ports:
+      - 3000:3000
+    environment:
+      - REDIS_URL=redis://redis
+      - RABBIT_MQ_URL=amqp://guest:guest@rabbitmq:5672
+    restart: on-failure
+    depends_on:
+      redis:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+
+    command: npm run start
+  redis:
+    image: "redis:6.2.3-alpine"
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+
+  rabbitmq:
+    image: "rabbitmq:3.8.16-management"
+    ports:
+      - 5672:5672
+      - 15672:15672
+      - 15671:15671
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    # environment:
+    #   - RABBITMQ_DEFAULT_USER:user
+    #   - RABBITMQ_DEFAULT_PASS:password123

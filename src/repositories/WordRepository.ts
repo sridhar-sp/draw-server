@@ -16,7 +16,7 @@ class WordRepository {
   private mongoClient: MongoClient
 
   constructor() {
-    this.mongoClient = new MongoClient(config.mongoDBConnectionEndPoint)
+    this.mongoClient = new MongoClient(config.mongoDBConnectionEndPoint,{ useUnifiedTopology: true } )
     this.mongoClient.connect() // async call
   }
 
