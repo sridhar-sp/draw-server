@@ -2,13 +2,16 @@
 
 ![CodeQL](https://github.com/half-blood-prince/draw-server/workflows/CodeQL/badge.svg?branch=master)
 
-A Backend server helps to create/join a drawing game.
+A multi-player drawing game to play with your friends & family.
 
----
+This is a drawing game where one player draw a given word and others will try to guess the word. Each player will take a turn on drawing and guessing. The scores will be assigned based on how quick participant guessed the word and how well their drawing is understood by other players.
+
 
 ## Requirements
 
-For development, you will need Node.js, npm and Redis installed in your environement.
+* Local development will need Node.js, npm, Redis and RabbitMQ installed in your environement. 
+* The application is dockerized so you can use docker also for local development.
+
 
 ## Install
 
@@ -32,9 +35,8 @@ This project is configured with the 'ts-node-dev'. If you make some changes and 
 
 ## Docs
 
-Run `/api-docs` end point to get the full api documentation
-
-Usecase and sequence diagrams can be found [here](https://half-blood-prince.github.io/draw-server)
+* Run `/api-docs` end point to get the full api documentation
+* [Usecase and sequence diagrams](https://half-blood-prince.github.io/draw-server)
 
 ## Credits
 
