@@ -43,4 +43,4 @@ This project is configured with the 'ts-node-dev'. If you make some changes and 
 The sequence diagrams are created using [js-sequence-diagrams](https://bramp.github.io/js-sequence-diagrams/)
 
 ## Android client application
-<a href='https://play.google.com/store/apps/details?id=com.gandiva.draw&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/></a>
+<a href='https://play.google.com/store/apps/details?id=com.gandiva.draw'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/></a>
