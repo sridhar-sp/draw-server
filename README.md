@@ -1,6 +1,6 @@
 # Draw & Guess Game Server
 
-![CodeQL](https://github.com/half-blood-prince/draw-server/workflows/CodeQL/badge.svg?branch=master)
+![CodeQL](https://github.com/sridhar-sp/draw-server/workflows/CodeQL/badge.svg?branch=master)
 
 A multi-player drawing game to play with your friends & family.
 
@@ -15,8 +15,8 @@ This is a drawing game where one player draw a given word and others will try to
 
 ## Install
 
-    $ git clone https://github.com/half-blood-prince/draw-server
-    $ cd draw-server
+    $ git clone https://github.com/sridhar-sp/draw-server
+    $ cd draw-serverCancel changes
     $ npm install
 
 ## Run server
@@ -36,7 +36,7 @@ This project is configured with the 'ts-node-dev'. If you make some changes and 
 ## Docs
 
 * Run `/api-docs` end point to get the full api documentation
-* [Usecase and sequence diagrams](https://half-blood-prince.github.io/draw-server)
+* [Usecase and sequence diagrams](https://sridhar-sp.github.io/draw-server)
 
 ## Credits
 
