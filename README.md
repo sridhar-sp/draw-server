@@ -16,7 +16,7 @@ This is a drawing game where one player draw a given word and others will try to
 ## Install
 
     $ git clone https://github.com/sridhar-sp/draw-server
-    $ cd draw-serverCancel changes
+    $ cd draw-server
     $ npm install
 
 ## Run server
