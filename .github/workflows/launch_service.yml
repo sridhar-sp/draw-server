@@ -25,8 +25,8 @@ jobs:
     steps:
       - name: Invoke backend
         run: |
-          echo "Begin launch service"
-          num_of_hit=0;
+          echo "Begin launch service."
+          num_of_hit=1;
           while [ $num_of_hit -le 5 ]; do
             http_status=$(curl -o /dev/null -s -w "%{http_code}" https://fun-draw-guess.herokuapp.com/)
             if [ "$http_status" = 200 ]; then
@@ -36,7 +36,9 @@ jobs:
                 echo "Failure hit_count = $num_of_hit"
             fi
             ((num_of_hit++));
+            echo "wait for 5 seconds before invoking the server again."
+            sleep 5
           done
-          echo "End launch service"
+          echo "End launch service."
 
           
