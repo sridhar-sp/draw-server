@@ -28,7 +28,7 @@ jobs:
           echo "Begin launch service."
           num_of_hit=1;
           while [ $num_of_hit -le 5 ]; do
-            http_status=$(curl -o /dev/null -s -w "%{http_code}" https://fun-draw-guess.herokuapp.com/)
+            http_status=$(curl -o /dev/null -s -w "%{http_code}" $PROD_URL)
             if [ "$http_status" = 200 ]; then
                 echo "Success hit_index = $num_of_hit"
                 break;
@@ -40,5 +40,7 @@ jobs:
             sleep 5
           done
           echo "End launch service."
+        env:
+          PROD_URL: PROD_URL
 
           
