@@ -21,7 +21,7 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     env:
-      PROD_URL: PROD_URL
+      PROD_URL: ${{ secrets.PROD_URL }}
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Invoke backend
