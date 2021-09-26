@@ -3,7 +3,7 @@
 # so user logging in during that time have to face atleaset one api call failure before proceeding, which is causing bad experience.
 # hence created this action to invoke my backend every 5 minute to keep the service alive.
 
-name: CI
+name: KickOffService
 
 # Controls when the workflow will run
 on:
