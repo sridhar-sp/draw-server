@@ -7,9 +7,9 @@ name: CI
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow every 5 minute
+  # Triggers the workflow every 15 minute
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/15 * * * *"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Invoke backend
         run: |
-          echo "Begin launch service. $PROD_URL . env.PROD_URL . ${{env.PROD_URL}}"
+          echo "Begin launch service"
           num_of_hit=1;
           while [ $num_of_hit -le 5 ]; do
             http_status=$(curl -o /dev/null -s -w "%{http_code}" ${{env.PROD_URL}})
