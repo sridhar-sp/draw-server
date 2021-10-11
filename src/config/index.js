@@ -1,10 +1,13 @@
-const dotenv = require("dotenv");
+const dotenv = require('dotenv')
 
-dotenv.config();
+dotenv.config()
 
 module.exports = {
   appName: process.env.APP_NAME,
   port: process.env.PORT,
+  leaderBoardVisibleTimeInSeconds:
+    process.env.LEADER_BOARD_VISIBLE_TIME_IN_SECONDS || 10,
+  maxDrawingWordsToList: process.env.MAX_WORDS_TO_QUERY || 10,
   accessToken: {
     secret: process.env.ACCESS_TOKEN_SECRET,
     lifeInSeconds: process.env.ACCESS_TOKEN_LIFE_IN_SECONDS,
@@ -14,15 +17,15 @@ module.exports = {
     lifeInSeconds: process.env.REFRESH_TOKEN_LIFE_IN_SECONDS,
   },
   firebaseConfig: JSON.parse(process.env.FIREBASE_CONFIG),
-  redisURL: process.env.REDIS_URL ? process.env.REDIS_URL : "",
-  rabbitMQUrl: process.env.RABBIT_MQ_URL ? process.env.RABBIT_MQ_URL : "",
+  redisURL: process.env.REDIS_URL ? process.env.REDIS_URL : '',
+  rabbitMQUrl: process.env.RABBIT_MQ_URL ? process.env.RABBIT_MQ_URL : '',
   mongoDBConnectionEndPoint: process.env.MONGO_DB_CONNECTION_ENDPOINT
     ? process.env.MONGO_DB_CONNECTION_ENDPOINT
-    : "",
+    : '',
   mongoDatabaseName: process.env.MONGO_DB_DATA_BASE_NAME
     ? process.env.MONGO_DB_DATA_BASE_NAME
-    : "",
+    : '',
   mongoQuestionCollectionName: process.env.MONGO_DB_QUESTION_COLLECTION_NAME
     ? process.env.MONGO_DB_QUESTION_COLLECTION_NAME
-    : "",
-};
+    : '',
+}

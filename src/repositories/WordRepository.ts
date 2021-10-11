@@ -16,7 +16,7 @@ class WordRepository {
   private mongoClient: MongoClient
 
   constructor() {
-    this.mongoClient = new MongoClient(config.mongoDBConnectionEndPoint,{ useUnifiedTopology: true } )
+    this.mongoClient = new MongoClient(config.mongoDBConnectionEndPoint, { useUnifiedTopology: true })
     this.mongoClient.connect() // async call
   }
 
@@ -31,7 +31,7 @@ class WordRepository {
     )
   }
 
-  getRandomWordsFromDatabase(maxNoOfResults: number): Promise<Array<string>> {
+  private getRandomWordsFromDatabase(maxNoOfResults: number): Promise<Array<string>> {
     return new Promise((resolve: (questions: Array<string>) => void, reject: (error: Error) => void) => {
 
       if (!this.mongoClient.isConnected()) {

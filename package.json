@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/half-blood-prince/draw-server.git"
+    "url": "git+https://github.com/sridhar-sp/draw-server.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/half-blood-prince/draw-server/issues"
+    "url": "https://github.com/sridhar-sp/draw-server/issues"
   },
-  "homepage": "https://github.com/half-blood-prince/draw-server#readme",
+  "homepage": "https://github.com/sridhar-sp/draw-server#readme",
   "dependencies": {
     "@types/amqplib": "^0.5.17",
     "@types/express": "^4.17.11",
