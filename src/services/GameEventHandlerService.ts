@@ -69,6 +69,7 @@ class GameEventHandlerService {
               gamePlayInfo.noOfRounds,
               gamePlayInfo.maxDrawingTime,
               gamePlayInfo.getMaxWordSelectionTimeInSeconds(),
+              gamePlayInfo.getWordSelectionSource(),
               gamePlayInfo.getGamePlayStatus()
             )
           )
@@ -143,6 +144,7 @@ class GameEventHandlerService {
       .then((gamePlayInfo) => this.rotateRoles(gamePlayInfo))
       .then((gamePlayInfo) => {
         gamePlayInfo.setGamePlayStatus(GamePlayStatus.STARTED);
+        gamePlayInfo.setOrganiserUid(socket.getUserRecord().uid)
         return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo);
       })
       .then((_) => this.socketServer.in(gameKey).emit(SocketEvents.Game.START_GAME))
@@ -341,19 +343,22 @@ class GameEventHandlerService {
 
   async handleFetchWordList(socket: Socket) {
     const gameKey = socket.getGameKey();
-    this.wordRepository
-      .getRandomWords(GameEventHandlerService.MAX_WORDS_TO_QUERY)
-      .then((questions) => {
-        this.gamePlayInfoRepository
-          .getGameInfoOrThrow(gameKey)
-          .then((gamePlayInfo) => {
-            this.scheduleAutoSelectWordTask(gamePlayInfo, questions[0], socket.id).then((taskId) => {
+    this.gamePlayInfoRepository
+      .getGameInfoOrThrow(gameKey)
+      .then((gamePlayInfo) => {
+        const organiserUid = gamePlayInfo.getOrganiserUid()
+        if (organiserUid == null) {
+          throw new Error("Organiser uid is not available. Are you sure the game is started.")
+        }
+        this.wordRepository
+          .getRandomWords(organiserUid, gamePlayInfo.getWordSelectionSource(), GameEventHandlerService.MAX_WORDS_TO_QUERY)
+          .then((words) => {
+            this.scheduleAutoSelectWordTask(gamePlayInfo, words[0], socket.id).then((taskId) => {
               gamePlayInfo.setAutoSelectWordTaskId(taskId);
               return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo);
+            }).then(() => {
+              socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(words));
             });
-          })
-          .then(() => {
-            socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
           })
           .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
       })

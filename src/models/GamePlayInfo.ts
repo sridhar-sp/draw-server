@@ -20,12 +20,14 @@ class GamePlayInfo {
       copyObj.word,
       copyObj.hint,
       copyObj.wordSelectTimeInMilliseconds,
-      copyObj.matchIndex
+      copyObj.matchIndex,
+      copyObj.organiserUid,
+      copyObj.wordSelectionSource
     );
   }
 
-  static create(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number) {
-    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, noOfRounds, 1, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null, null, 0, 1);
+  static create(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number, wordSelectionSource: number) {
+    return new GamePlayInfo(gameKey, GamePlayStatus.NOT_STARTED, noOfRounds, 1, maxWordSelectionTime, maxDrawingTime, null, [], null, null, null, null, 0, 1, null, wordSelectionSource);
   }
 
   public static fromJson(json: string): GamePlayInfo | null {
@@ -51,6 +53,8 @@ class GamePlayInfo {
   private hint: string | null;
   private wordSelectTimeInMilliseconds: number
   private matchIndex: number
+  private organiserUid: string | null
+  private wordSelectionSource: number
 
   constructor(
     gameKey: string,
@@ -66,7 +70,9 @@ class GamePlayInfo {
     word: string | null,
     hint: string | null,
     wordSelectTimeInMilliseconds: number,
-    matchIndex: number
+    matchIndex: number,
+    organiserUid: string | null,
+    wordSelectionSource: number
   ) {
     this.gameKey = gameKey;
     this.gamePlayStatus = gamePlayStatus;
@@ -82,10 +88,24 @@ class GamePlayInfo {
     this.hint = hint
     this.wordSelectTimeInMilliseconds = wordSelectTimeInMilliseconds
     this.matchIndex = matchIndex
+    this.organiserUid = organiserUid
+    this.wordSelectionSource = wordSelectionSource
   }
 
   public toJson(): string {
     return JSON.stringify(this);
+  }
+
+  public setOrganiserUid(organiserUid: string) {
+    this.organiserUid = organiserUid
+  }
+
+  public getOrganiserUid(): string | null {
+    return this.organiserUid
+  }
+
+  public getWordSelectionSource(): number {
+    return this.wordSelectionSource
   }
 
   updateGamePlayStatus(gamePlayStatus: GamePlayStatus): void {

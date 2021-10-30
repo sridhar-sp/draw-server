@@ -20,7 +20,7 @@ class GameService {
     return new Promise((resolve: (response: BaseResponse) => void, reject: (error: Error) => void) => {
       const gameKey = cryptoRandomString({ length: GameService.GAME_KEY_LENGTH })
       this.gamePlayInfoRepository
-        .createGameInfo(gameKey, request.noOfRounds, request.maxWordSelectionTime, request.maxDrawingTime)
+        .createGameInfo(gameKey, request.noOfRounds, request.maxWordSelectionTime, request.maxDrawingTime, request.wordSelectionSource)
         .then(gamePlayInfo => resolve(SuccessResponse.createSuccessResponse(CreateGameResponse.create(gamePlayInfo.gameKey))))
         .catch(error => resolve(ErrorResponse.createErrorResponse(500, String(error))))
     })

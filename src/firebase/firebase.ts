@@ -6,4 +6,4 @@ admin.initializeApp({
     credential: admin.credential.cert(config.firebaseConfig)
 });
 
-export default { auth: admin.auth }
+export default { auth: admin.auth, firestore: admin.firestore }

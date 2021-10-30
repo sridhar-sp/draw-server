@@ -14,8 +14,8 @@ class GamePlayInfoRepository {
     this.redisHelper = redisHelper;
   }
 
-  createGameInfo(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number): Promise<GamePlayInfo> {
-    const gamePlayInfo = GamePlayInfo.create(gameKey, noOfRounds, maxWordSelectionTime, maxDrawingTime)
+  createGameInfo(gameKey: string, noOfRounds: number, maxWordSelectionTime: number, maxDrawingTime: number, wordSelectionSource: number): Promise<GamePlayInfo> {
+    const gamePlayInfo = GamePlayInfo.create(gameKey, noOfRounds, maxWordSelectionTime, maxDrawingTime, wordSelectionSource)
     return this.saveGameInfo(gamePlayInfo)
   }
 

@@ -10,7 +10,14 @@ const gameService = new GameService();
 
 router.post("/createGame", validateRequest, async (req: express.Request, res: express.Response) => {
   logger.logInfo(TAG, `createGame called`);
-  const request = CreateGameRequest.create(req.body.noOfRounds, req.body.maxDrawingTime, req.body.maxWordSelectionTime);
+  const request = CreateGameRequest.create(req.body.noOfRounds, req.body.maxDrawingTime, req.body.maxWordSelectionTime, 0);
+  const response = await gameService.createGame(request);
+  res.status(response.code).send(response);
+});
+
+router.post("/createGame/v2", validateRequest, validateV2Request, async (req: express.Request, res: express.Response) => {
+  logger.logInfo(TAG, `createGame called`);
+  const request = CreateGameRequest.create(req.body.noOfRounds, req.body.maxDrawingTime, req.body.maxWordSelectionTime, req.body.wordSelectionSource);
   const response = await gameService.createGame(request);
   res.status(response.code).send(response);
 });
@@ -36,6 +43,22 @@ function validateRequest(req: express.Request, res: express.Response, next: Next
 
   if (dataTypeError.length > 0) {
     const errorResponse = ErrorResponse.createErrorResponse(400, `Wrong values [${dataTypeError.join()}]`);
+    res.status(errorResponse.code).send(errorResponse);
+    return;
+  }
+
+  next();
+}
+
+function validateV2Request(req: express.Request, res: express.Response, next: NextFunction) {
+  if (!req.body.wordSelectionSource) {
+    const errorResponse = ErrorResponse.createErrorResponse(400, "Missing wordSelectionSource value");
+    res.status(errorResponse.code).send(errorResponse);
+    return;
+  }
+
+  if (typeof req.body.wordSelectionSource !== "number") {
+    const errorResponse = ErrorResponse.createErrorResponse(400, `wordSelectionSource should be number`);
     res.status(errorResponse.code).send(errorResponse);
     return;
   }
