@@ -5,12 +5,12 @@ class SimpleGameInfo extends CreateGameRequest {
     public gameKey: string
     public gamePlayStatus: GamePlayStatus
 
-    static createSimpleGameInfo(gameKey: string, noOfRounds: number, maxDrawingTime: number, maxWordSelectionTime: number, gamePlayStatus: GamePlayStatus) {
-        return new SimpleGameInfo(gameKey, noOfRounds, maxDrawingTime, maxWordSelectionTime, gamePlayStatus);
+    static createSimpleGameInfo(gameKey: string, noOfRounds: number, maxDrawingTime: number, maxWordSelectionTime: number, wordSelectionSource: number, gamePlayStatus: GamePlayStatus) {
+        return new SimpleGameInfo(gameKey, noOfRounds, maxDrawingTime, maxWordSelectionTime, wordSelectionSource, gamePlayStatus);
     }
 
-    private constructor(gameKey: string, noOfRounds: number, maxDrawingTime: number, maxWordSelectionTime: number, gamePlayStatus: GamePlayStatus) {
-        super(noOfRounds, maxDrawingTime, maxWordSelectionTime)
+    private constructor(gameKey: string, noOfRounds: number, maxDrawingTime: number, maxWordSelectionTime: number, wordSelectionSource: number, gamePlayStatus: GamePlayStatus) {
+        super(noOfRounds, maxDrawingTime, maxWordSelectionTime, wordSelectionSource)
         this.gameKey = gameKey
         this.gamePlayStatus = gamePlayStatus
     }

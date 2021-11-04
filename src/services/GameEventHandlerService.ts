@@ -1,5 +1,6 @@
 import { Socket } from "socket.io";
 
+import config from "../config"
 import GamePlayInfoRepository from "../repositories/GamePlayInfoRepository";
 import SuccessResponse from "../models/SuccessResponse";
 import ErrorResponse from "../models/ErrorResponse";
@@ -30,9 +31,9 @@ import WordGuessEventResponse from "../models/WordGuessEventResponse";
 class GameEventHandlerService {
   private static TAG = "GameEventHandlerService";
 
-  private static LEADER_BOARD_VISIBLE_TIME_IN_SECONDS = 5;
+  private static LEADER_BOARD_VISIBLE_TIME_IN_SECONDS: number = parseInt(config.leaderBoardVisibleTimeInSeconds?.toString() || '10');
 
-  private static MAX_WORDS_TO_QUERY = 5;
+  private static MAX_WORDS_TO_QUERY: number = parseInt(config.maxDrawingWordsToList?.toString() || '5');
 
   private socketServer: Server;
   private gamePlayInfoRepository: GamePlayInfoRepository;
@@ -68,6 +69,7 @@ class GameEventHandlerService {
               gamePlayInfo.noOfRounds,
               gamePlayInfo.maxDrawingTime,
               gamePlayInfo.getMaxWordSelectionTimeInSeconds(),
+              gamePlayInfo.getWordSelectionSource(),
               gamePlayInfo.getGamePlayStatus()
             )
           )
@@ -84,7 +86,7 @@ class GameEventHandlerService {
     try {
       logger.logInfo(
         GameEventHandlerService.TAG,
-        `${socket.getUserRecord().displayName} disconnected. id = ${socket.id}`
+        `${socket.getUserRecord().displayName} disconnected.id = ${socket.id} `
       );
       socket.leave(socket.getGameKey());
       socket
@@ -135,13 +137,14 @@ class GameEventHandlerService {
   async handleStartGame(socket: Socket) {
     const gameKey = socket.getGameKey();
 
-    logger.logInfo(GameEventHandlerService.TAG, `Start game : game key = ${gameKey}`);
+    logger.logInfo(GameEventHandlerService.TAG, `Start game: game key = ${gameKey} `);
 
     await this.gamePlayInfoRepository
       .getGameInfoOrThrow(gameKey)
       .then((gamePlayInfo) => this.rotateRoles(gamePlayInfo))
       .then((gamePlayInfo) => {
         gamePlayInfo.setGamePlayStatus(GamePlayStatus.STARTED);
+        gamePlayInfo.setOrganiserUid(socket.getUserRecord().uid)
         return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo);
       })
       .then((_) => this.socketServer.in(gameKey).emit(SocketEvents.Game.START_GAME))
@@ -253,7 +256,7 @@ class GameEventHandlerService {
       .getGameInfoOrThrow(gameKey)
       .then((gamePlayInfo) => {
         const thisParticipant = gamePlayInfo.findParticipant(socket.id);
-        if (thisParticipant == null) throw new Error(`Participant ${socket.id} is not belong to the game ${gameKey}`);
+        if (thisParticipant == null) throw new Error(`Participant ${socket.id} is not belong to the game ${gameKey} `);
 
         const gameScreenState = thisParticipant.getGameScreenState();
         switch (gameScreenState) {
@@ -296,13 +299,13 @@ class GameEventHandlerService {
       .then((gameScreenStateResponse) =>
         socket.emit(SocketEvents.Game.GAME_SCREEN_STATE_RESULT, gameScreenStateResponse)
       )
-      .catch((error) => logger.logError(GameEventHandlerService.TAG, `handleGameScreenState : ${error}`));
+      .catch((error) => logger.logError(GameEventHandlerService.TAG, `handleGameScreenState: ${error} `));
   }
 
   private getDrawingParticipantSocketIdOrThrow(gamePlayInfo: GamePlayInfo): string {
     const drawingParticipant = gamePlayInfo.getDrawingParticipant();
     if (null == drawingParticipant)
-      throw new Error(`No drawing participant info present in game ${gamePlayInfo.gameKey}`);
+      throw new Error(`No drawing participant info present in game ${gamePlayInfo.gameKey} `);
     return drawingParticipant.socketId;
   }
 
@@ -340,20 +343,22 @@ class GameEventHandlerService {
 
   async handleFetchWordList(socket: Socket) {
     const gameKey = socket.getGameKey();
-
-    this.wordRepository
-      .getRandomWords(GameEventHandlerService.MAX_WORDS_TO_QUERY)
-      .then((questions) => {
-        this.gamePlayInfoRepository
-          .getGameInfoOrThrow(gameKey)
-          .then((gamePlayInfo) => {
-            this.scheduleAutoSelectWordTask(gamePlayInfo, questions[0], socket.id).then((taskId) => {
+    this.gamePlayInfoRepository
+      .getGameInfoOrThrow(gameKey)
+      .then((gamePlayInfo) => {
+        const organiserUid = gamePlayInfo.getOrganiserUid()
+        if (organiserUid == null) {
+          throw new Error("Organiser uid is not available. Are you sure the game is started.")
+        }
+        this.wordRepository
+          .getRandomWords(organiserUid, gamePlayInfo.getWordSelectionSource(), GameEventHandlerService.MAX_WORDS_TO_QUERY)
+          .then((words) => {
+            this.scheduleAutoSelectWordTask(gamePlayInfo, words[0], socket.id).then((taskId) => {
               gamePlayInfo.setAutoSelectWordTaskId(taskId);
               return this.gamePlayInfoRepository.saveGameInfo(gamePlayInfo);
+            }).then(() => {
+              socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(words));
             });
-          })
-          .then(() => {
-            socket.emit(SocketEvents.Game.LIST_OF_WORD_RESPONSE, SuccessResponse.createSuccessResponse(questions));
           })
           .catch((error) => logger.logError(GameEventHandlerService.TAG, error));
       })
@@ -362,7 +367,7 @@ class GameEventHandlerService {
 
   async handleSelectWord(fromSocket: Socket, word: string) {
     const gameKey = fromSocket.getGameKey();
-    logger.logInfo(GameEventHandlerService.TAG, `handleSelectWord game = ${gameKey} data = ${word}`);
+    logger.logInfo(GameEventHandlerService.TAG, `handleSelectWord game = ${gameKey} data = ${word} `);
 
     this.gamePlayInfoRepository
       .getGameInfoOrThrow(gameKey)
@@ -443,10 +448,10 @@ class GameEventHandlerService {
 
         if (word == null || word.trim() == "")
           throw new Error(
-            `handleDrawingEvent :: No word data found in game play record for key: ${socket.getGameKey()}`
+            `handleDrawingEvent:: No word data found in game play record for key: ${socket.getGameKey()} `
           );
 
-        logger.logInfo(GameEventHandlerService.TAG, `Word = '${word} :: answer'${answer}`);
+        logger.logInfo(GameEventHandlerService.TAG, `Word = '${word} :: answer'${answer} `);
 
         if (answer.toLowerCase() == word.toLowerCase()) {
           gamePlayInfo.setParticipantScoreForCurrentMatch(socket.id, gamePlayInfo.findScoreBasedOnAnswerTime());
@@ -489,7 +494,7 @@ class GameEventHandlerService {
     logger.logInfo(GameEventHandlerService.TAG, `rotateRoles for game ${gamePlayInfo.gameKey}`);
 
     if (gamePlayInfo.participants.length == 0)
-      throw new Error(`No participant available on game ${gamePlayInfo.gameKey}`);
+      throw new Error(`No participant available on game ${gamePlayInfo.gameKey} `);
 
     let nextDrawingParticipantPos;
     if (gamePlayInfo.getDrawingParticipant() == null) {
@@ -509,7 +514,7 @@ class GameEventHandlerService {
       else participant.setGameScreenState(GameScreen.State.WAIT_FOR_DRAWING_WORD);
       logger.logInfo(
         GameEventHandlerService.TAG,
-        `Assigning ${participant.socketId} with ${participant.getGameScreenState()}`
+        `Assigning ${participant.socketId} with ${participant.getGameScreenState()} `
       );
     });
 
