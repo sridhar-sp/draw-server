@@ -29,3 +29,4 @@ jobs:
             echo "Successfully triggered deployment"
           else
             echo "Failed to trigger deployment"
+          fi
