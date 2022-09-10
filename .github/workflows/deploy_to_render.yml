@@ -1,0 +1,31 @@
+# Trigger deployment to render
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "master" branch
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  deploy_to_render:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Invoke backend
+        run: |
+          echo "Begin deployment"
+          http_status=$(curl -o /dev/null -s -w "%{http_code}" ${{env.DEPLOY_HOOK_URL}})
+            if [ "$http_status" = 200 ]; then
+              echo "Successfully triggered deployment"
+            else
+              echo "Failed to trigger deployment"
