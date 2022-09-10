@@ -11,7 +11,7 @@ class Logger {
     console.log(`Debug :: ${tag} :: ${log}`);
   }
 
-  logError(tag: string, log: string) {
+  logError(tag: string, log: any) {
     console.error(`Error :: ${tag} :: ${log}`);
   }
 
