@@ -25,7 +25,7 @@ jobs:
         run: |
           echo "Begin deployment"
           http_status=$(curl -o /dev/null -s -w "%{http_code}" ${{env.DEPLOY_HOOK_URL}})
-            if [ "$http_status" = 200 ]; then
-              echo "Successfully triggered deployment"
-            else
-              echo "Failed to trigger deployment"
+          if [ "$http_status" = 200 ]; then
+            echo "Successfully triggered deployment"
+          else
+            echo "Failed to trigger deployment"
