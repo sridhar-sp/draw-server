@@ -11,7 +11,11 @@ app.use(bodyParser.json());
 app.use("/api", require("./routes/api"));
 
 app.get("/", (req: Request, res: Response) => {
-  res.send("Welcome to Draw & Guess, Port :: " + config.port);
+  res.send("Welcome to Draw & Guess");
+});
+
+app.get("/portDetails", (req: Request, res: Response) => {
+  res.send("Welcome to Draw & Guess, Port :: " + config.port + " NODE_ENV " + process.env.NODE_ENV);
 });
 
 app.use("/api-docs", swaggerMiddleware.ui, swaggerMiddleware.doc);

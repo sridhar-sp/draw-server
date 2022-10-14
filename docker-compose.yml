@@ -1,6 +1,6 @@
 version: "3"
 services:
-  draw-guess:
+  app:
     build: .
     ports:
       - 3000:3000
@@ -15,7 +15,7 @@ services:
       rabbitmq:
         condition: service_healthy
 
-    command: npm run start
+    command: npm run start:prod
   redis:
     image: "redis:6.2.3-alpine"
     ports:

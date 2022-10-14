@@ -5,7 +5,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsc && node build/app.js",
+    "start:prod": "node build/app.js",
     "tsc": "tsc",
+    "build": "tsc",
     "dev": "tsnd --respawn  ./src/app.ts"
   },
   "repository": {
@@ -13,7 +15,7 @@
     "url": "git+https://github.com/sridhar-sp/draw-server.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "sridhar-sp",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/sridhar-sp/draw-server/issues"
