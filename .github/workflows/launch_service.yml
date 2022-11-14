@@ -41,6 +41,24 @@ jobs:
             sleep 5
           done
           echo "End launch service."
+      - name: Invoke backend-2
+        run: |
+          echo "Begin launch service-2"
+          num_of_hit=1;
+          while [ $num_of_hit -le 5 ]; do
+            http_status=$(curl -o /dev/null -s -w "%{http_code}" ${{env.TEMP_PROD_URL}})
+            if [ "$http_status" = 200 ]; then
+                echo "Success hit_index = $num_of_hit"
+                break;
+            else
+                echo "Failure hit_count = $num_of_hit"
+            fi
+            ((num_of_hit++));
+            echo "wait for 5 seconds before invoking the temp prod server again."
+            sleep 5
+          done
+          echo "End launch service-2."  
+      
         
 
           
