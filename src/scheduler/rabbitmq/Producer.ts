@@ -1,12 +1,8 @@
-import { Replies, Message } from "amqplib/callback_api";
-
 import AMQBBase from "./amqpBase";
 import logger from "../../logger/logger";
 
-
 class Producer extends AMQBBase {
-
-  private static LOG_TAG = "Producer"
+  private static LOG_TAG = "Producer";
 
   public static create(url: string): Producer {
     return new Producer(url);
@@ -29,12 +25,12 @@ class Producer extends AMQBBase {
 
     return new Promise((resolve, reject) => {
       this.assertExchange(INTERMEDIATE_EXCHANGE, INTERMEDIATE_EXCHANGE_TYPE)
-        .then(_ => this.assertExchange(FINAL_EXCHANGE, FINAL_EXCHANGE_TYPE))
-        .then(_ => this.assertQueue(INTERMEDIATE_QUEUE, { deadLetterExchange: FINAL_EXCHANGE, }))
-        .then(_ => this.assertQueue(FINAL_QUEUE, {}))
-        .then(_ => this.bindQueue(INTERMEDIATE_QUEUE, INTERMEDIATE_EXCHANGE, ""))
-        .then(_ => this.bindQueue(FINAL_QUEUE, FINAL_EXCHANGE, ""))
-        .then(_ => {
+        .then((_) => this.assertExchange(FINAL_EXCHANGE, FINAL_EXCHANGE_TYPE))
+        .then((_) => this.assertQueue(INTERMEDIATE_QUEUE, { deadLetterExchange: FINAL_EXCHANGE }))
+        .then((_) => this.assertQueue(FINAL_QUEUE, {}))
+        .then((_) => this.bindQueue(INTERMEDIATE_QUEUE, INTERMEDIATE_EXCHANGE, ""))
+        .then((_) => this.bindQueue(FINAL_QUEUE, FINAL_EXCHANGE, ""))
+        .then((_) => {
           this.channel?.sendToQueue(INTERMEDIATE_QUEUE, Buffer.from(data), {
             expiration: delayInMills,
           });
