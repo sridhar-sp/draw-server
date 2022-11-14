@@ -36,7 +36,7 @@
     "crypto-random-string": "^3.3.1",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "firebase-admin": "^9.7.0",
+    "firebase-admin": "^11.0.1",
     "install": "^0.13.0",
     "jest": "^26.6.3",
     "jsonwebtoken": "^8.5.1",
